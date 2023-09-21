@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import WebKit
 
 
 struct FinanceApp: App {
@@ -233,23 +234,155 @@ struct Transaction: Identifiable {
 
     
 // Vista para "Tags"
-    struct TagsView: View {
-        var body: some View {
-            ZStack() {
-                Color(red: 21/255, green: 191/255, blue: 129/255).edgesIgnoringSafeArea(.all)
-                VStack {
-                    Text("Tags")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                }
-            }.frame(maxWidth: 400, maxHeight: 60)
-            Spacer()
-            VStack() {
-                
-            }.background(Color.white)
-        }
-    }
+    struct TagsItem {
+           let title: String
+           let imageName: String
+       }
+
+       struct TagsView: View {
+           @State var tagsItems: [TagsItem] = [
+               TagsItem(title: "Food", imageName: "Food"),
+               TagsItem(title: "Transportation", imageName: "Transportation"),
+               TagsItem(title: "Housing", imageName: "Housing"),
+               TagsItem(title: "Health", imageName: "Health"),
+               TagsItem(title: "Entertainment", imageName: "Entertainment"),
+               TagsItem(title: "Add", imageName: "Add")
+           ]
+
+           @State var isEditMode = false
+           @State var isAddTagDialogPresented = false
+           @State var newTagName = ""
+
+           // Función para agregar una nueva etiqueta
+           func addNewTag(_ tagName: String) {
+               let newTag = TagsItem(title: tagName, imageName: "DefaultImage") // Ajusta la imagen según tus necesidades.
+               tagsItems.insert(newTag, at: tagsItems.count - 1)
+           }
+
+           var body: some View {
+               ZStack() {
+                   Color(red: 21/255, green: 191/255, blue: 129/255).edgesIgnoringSafeArea(.all)
+                   VStack {
+                       Text("Tags")
+                           .font(.title)
+                           .fontWeight(.bold)
+                           .foregroundColor(.white)
+                   }
+               }
+               .frame(maxWidth: 400, maxHeight: 60)
+               Spacer()
+
+               VStack() {
+                   Spacer(minLength: 40)
+                   LazyVGrid(columns: [
+                       GridItem(.flexible(), spacing: 10),
+                       GridItem(.flexible(), spacing: 10),
+                       GridItem(.flexible(), spacing: 10)
+                   ], spacing: 50) {
+                       ForEach(tagsItems.indices, id: \.self) { index in
+                           ZStack {
+                               Rectangle()
+                                   .fill(Color(red: 242/255, green: 242/255, blue: 242/255))
+                                   .frame(width: 90, height: 90)
+                                   .cornerRadius(10)
+                                   .overlay(
+                                       RoundedRectangle(cornerRadius: 10)
+                                           .stroke(Color.gray, lineWidth: 0.5)
+                                   )
+                                   .shadow(color: Color.black.opacity(0.3), radius: 5, x: 0, y: 2)
+
+                               VStack {
+                                   Spacer(minLength: 8)
+                                   Image(tagsItems[index].imageName)
+                                       .resizable()
+                                       .frame(width: 45, height: 45)
+
+                                   Text(tagsItems[index].title)
+                                       .foregroundColor(.gray)
+                                       .padding(10)
+                                       .font(.custom("San Francisco", size: 12))
+                               }
+                               
+                               if tagsItems[index].title != "Add" {
+                                   if isEditMode {
+                                       Button(action: {
+                                           tagsItems.remove(at: index)
+                                       }) {
+                                           Image(systemName: "minus.circle.fill")
+                                               .foregroundColor(.red)
+                                               .padding(5)
+                                               .background(Color.white)
+                                               .clipShape(Circle())
+                                               .offset(x: 20, y: -20)
+                                       }
+                                   }
+                               } else {
+                                   Button(action: {
+                                       isAddTagDialogPresented.toggle()
+                                   }) {
+                                       Image(systemName: "plus.circle.fill")
+                                           .foregroundColor(.green)
+                                           .padding(5)
+                                           .background(Color.white)
+                                           .clipShape(Circle())
+                                           .offset(x: 20, y: -20)
+                                   }
+                               }
+                           }
+                       }
+                   }
+                   Spacer(minLength: 30)
+                   .padding()
+               }
+               .background(Color.white)
+               .toolbar {
+                   ToolbarItem(placement: .navigationBarTrailing) {
+                       Button(action: {
+                           isEditMode.toggle()
+                       }) {
+                           Text(isEditMode ? "Done" : "Edit")
+                       }
+                   }
+               }
+               .sheet(isPresented: $isAddTagDialogPresented) {
+                   AddTagDialog(isPresented: $isAddTagDialogPresented, tagName: $newTagName, addTagAction: addNewTag)
+               }
+           }
+       }
+
+       struct AddTagDialog: View {
+           @Binding var isPresented: Bool
+           @Binding var tagName: String
+           var addTagAction: (String) -> Void // Cierre para agregar una nueva etiqueta
+
+           var body: some View {
+               VStack {
+                   Text("Agregar Nueva Etiqueta")
+                       .font(.title)
+                       .padding()
+
+                   TextField("Nombre de la etiqueta", text: $tagName)
+                       .textFieldStyle(RoundedBorderTextFieldStyle())
+                       .padding()
+
+                   HStack {
+                       Button("Cancelar") {
+                           isPresented = false
+                       }
+                       Spacer()
+                       Button("Guardar") {
+                           // Llama a la función para agregar la nueva etiqueta
+                           addTagAction(tagName)
+
+                           // Cierra el diálogo
+                           isPresented = false
+                       }
+                   }
+                   .padding()
+               }
+               .padding()
+           }
+       }
     
     
 
@@ -275,7 +408,36 @@ struct Transaction: Identifiable {
     
 
 // Vista para "Accounts"
+    struct WebView: UIViewRepresentable {
+        let urlString: String
+
+        func makeUIView(context: Context) -> WKWebView {
+            let webView = WKWebView()
+            return webView
+        }
+
+        func updateUIView(_ uiView: WKWebView, context: Context) {
+            if let url = URL(string: urlString) {
+                let request = URLRequest(url: url)
+                uiView.load(request)
+            }
+        }
+    }
+
+    struct WebSheetItem: Identifiable {
+        let id = UUID()
+        let urlString: String
+    }
+
     struct AccountsView: View {
+        let accounts: [Account] = [
+            Account(title: "Paypal", imageName: "Paypal", link: "https://www.paypal.com/signin"),
+            Account(title: "Nequi", imageName: "Nequi", link: "https://transacciones.nequi.com/bdigital/login.jsp"),
+            Account(title: "Daviplata", imageName: "Daviplata", link: "https://conectesunegocio.daviplata.com/es/user/login")
+        ]
+
+        @State private var selectedAccountURL: WebSheetItem? = nil
+
         var body: some View {
             ZStack() {
                 Color(red: 21/255, green: 191/255, blue: 129/255).edgesIgnoringSafeArea(.all)
@@ -286,10 +448,51 @@ struct Transaction: Identifiable {
                         .foregroundColor(.white)
                 }
             }.frame(maxWidth: 400, maxHeight: 60)
-            Spacer()
-            VStack() {
-                
-            }.background(Color.white)
+            .background(Color(red: 240/255, green: 240/255, blue: 242/255))
+            VStack{
+                Text("Connect with")
+                    .fontWeight(.light)
+                List(accounts, id: \.title) { account in
+                    Button(action: {
+                        selectedAccountURL = WebSheetItem(urlString: account.link)
+                    }) {
+                        AccountRow(account: account)
+                    }
+                }
+            }.background(Color(red: 240/255, green: 240/255, blue: 242/255))
+            .sheet(item: $selectedAccountURL) { webSheetItem in
+                NavigationView {
+                    WebView(urlString: webSheetItem.urlString)
+                        .navigationBarTitle("Account Login", displayMode: .inline)
+                        .navigationBarItems(leading: Button(action: {
+                            selectedAccountURL = nil
+                        }) {
+                            Image(systemName: "arrow.left")
+                                .foregroundColor(.blue)
+                        })
+                }
+            }
+        }
+    }
+
+    struct Account {
+        let title: String
+        let imageName: String
+        let link: String
+    }
+
+    struct AccountRow: View {
+        let account: Account
+        
+        var body: some View {
+            HStack {
+                Image(account.imageName)
+                    .resizable()
+                    .frame(width: 40, height: 40)
+                    .cornerRadius(20)
+                Text(account.title)
+                    .font(.headline)
+            }
         }
     }
     
