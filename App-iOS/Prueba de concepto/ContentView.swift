@@ -12,10 +12,11 @@ import WebKit
 struct FinanceApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            LoginView()
         }
     }
 }
+
 
 struct ContentView: View {
     @State private var balance: Double = 1000.0 // Initial balance
@@ -24,7 +25,7 @@ struct ContentView: View {
     var body: some View {
         NavigationView {
             ZStack() {
-                Color(red: 21/255, green: 191/255, blue: 129/255).edgesIgnoringSafeArea(.all)
+                Color(hex:"12CD8A").edgesIgnoringSafeArea(.all)
                 
                 VStack() {
                     VStack() {
@@ -52,13 +53,18 @@ struct ContentView: View {
                             // Add transaction view goes here
                         }
                     }
+                    
                     Spacer(minLength: 10)
                         MainMenu()
                     
                 }
             }
+            
+            
         }
+        .navigationBarBackButtonHidden(/*@START_MENU_TOKEN@*/true/*@END_MENU_TOKEN@*/)
     }
+    
 }
 
 struct MenuItem {
@@ -79,8 +85,21 @@ struct MainMenu: View {
     
     var body: some View {
         VStack {
-            Spacer(minLength: 50)
+            
+            ZStack {
+                    Rectangle()
+                    .fill(Color.white)
+                        .mask(TopRoundedRectangle(radius: 30))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 30)
+                                .fill(Color.white)
+                                .shadow(radius: 3, x: 0, y: -3)
+                            
+                        )
+                        .edgesIgnoringSafeArea(/*@START_MENU_TOKEN@*/.all/*@END_MENU_TOKEN@*/)
+                
             VStack {
+                Spacer(minLength: 50)
                 LazyVGrid(columns: [
                     GridItem(.flexible(), spacing: 10),
                     GridItem(.flexible(), spacing: 10)
@@ -113,9 +132,14 @@ struct MainMenu: View {
                         .padding()
                 }
             }
+            }
+            .edgesIgnoringSafeArea(/*@START_MENU_TOKEN@*/.all/*@END_MENU_TOKEN@*/)
         }
+        .edgesIgnoringSafeArea(/*@START_MENU_TOKEN@*/.all/*@END_MENU_TOKEN@*/)
         
-        .background(Color.white)
+        
+        
+
     }
     
     
@@ -512,10 +536,26 @@ struct Transaction: Identifiable {
             Spacer()
             VStack() {
                 
-            }.background(Color.white)
+            }.background(Color.white).cornerRadius(20)
         }
     }
 
 
 
+}
+
+struct TopRoundedRectangle: Shape {
+    var radius: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: 0, y: rect.maxY)) // start from bottom left
+        path.addLine(to: CGPoint(x: 0, y: radius)) // line to top left
+        path.addArc(center: CGPoint(x: radius, y: radius), radius: radius, startAngle: Angle(degrees: 180), endAngle: Angle(degrees: 90), clockwise: false) // top left corner
+        path.addLine(to: CGPoint(x: rect.maxX - radius, y: 0)) // line to top right
+        path.addArc(center: CGPoint(x: rect.maxX - radius, y: radius), radius: radius, startAngle: Angle(degrees: 90), endAngle: Angle(degrees: 0), clockwise: false) // top right corner
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY)) // line to bottom right
+        path.closeSubpath()
+        return path
+    }
 }
