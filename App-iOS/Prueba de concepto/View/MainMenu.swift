@@ -15,8 +15,19 @@ struct MainMenu: View {
     
     var body: some View {
         VStack {
-            Spacer(minLength: 50)
-            VStack {
+            ZStack {
+                                Rectangle()
+                                .fill(Color.white)
+                                    .mask(TopRoundedRectangle(radius: 30))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 30)
+                                            .fill(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
+                                            .shadow(radius: 3, x: 0, y: -3)
+
+                                    )
+                                    .edgesIgnoringSafeArea(/*@START_MENU_TOKEN@*/.all/*@END_MENU_TOKEN@*/)
+                VStack {
+                Spacer(minLength: 50)
                 LazyVGrid(columns: [
                     GridItem(.flexible(), spacing: 10),
                     GridItem(.flexible(), spacing: 10)
@@ -49,6 +60,24 @@ struct MainMenu: View {
                         .padding()
                 }
             }
-        } .background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
+            .edgesIgnoringSafeArea(/*@START_MENU_TOKEN@*/.all/*@END_MENU_TOKEN@*/)
+        }
+        }
+    }
+}
+
+struct TopRoundedRectangle: Shape {
+    var radius: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: 0, y: rect.maxY)) // start from bottom left
+        path.addLine(to: CGPoint(x: 0, y: radius)) // line to top left
+        path.addArc(center: CGPoint(x: radius, y: radius), radius: radius, startAngle: Angle(degrees: 180), endAngle: Angle(degrees: 90), clockwise: false) // top left corner
+        path.addLine(to: CGPoint(x: rect.maxX - radius, y: 0)) // line to top right
+        path.addArc(center: CGPoint(x: rect.maxX - radius, y: radius), radius: radius, startAngle: Angle(degrees: 90), endAngle: Angle(degrees: 0), clockwise: false) // top right corner
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY)) // line to bottom right
+        path.closeSubpath()
+        return path
     }
 }
