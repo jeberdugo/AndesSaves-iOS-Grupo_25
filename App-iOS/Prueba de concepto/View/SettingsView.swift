@@ -24,6 +24,65 @@ import SwiftUI
             Spacer()
             VStack() {
                 
-            }.background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
+           HStack() {
+                        Image(systemName: "dollarsign.circle")
+                            .foregroundColor(.blue)
+                            .padding(.leading, 16)
+                            .frame(width: 30, height: 30)
+
+                        SectionView(title: "Currency")
+                            .font(.headline)
+                            .padding(.leading, 16)
+                            .foregroundColor(.primary)
+
+                        Spacer()}
+
+                    Divider()
+
+                    HStack(){
+                        Image(systemName: "globe")
+                            .foregroundColor(.blue)
+                            .padding(.leading, 16)
+                            .frame(width: 30, height: 30)
+
+                        SectionView(title: "Language")
+                            .font(.headline)
+                            .padding(.leading, 16)
+                            .foregroundColor(.primary)
+
+                        Spacer()}
+
+                    Divider()
+
+                    HStack() {
+                        Image(systemName: "bell")
+                            .foregroundColor(.blue)
+                            .padding(.leading, 16)
+                            .frame(width: 30, height: 30)
+
+                        SectionView(title: "Notifications")
+                            .font(.headline)
+                            .padding(.leading, 16)
+                            .foregroundColor(.primary)
+
+                        Spacer()}
+
+                }.background(Color.white)
+                .padding(.top, -650)
+
+        }
+    }
+
+    struct SectionView: View {
+        var title: String
+
+        var body: some View {
+            HStack {
+                Text(title)
+                    .font(.headline)
+                    .padding(.leading, 16)
+                Spacer()
+            }
+            .frame(height: 40) // Adjust the height as needed
         }
     }
