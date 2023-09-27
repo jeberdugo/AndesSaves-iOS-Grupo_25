@@ -3,10 +3,12 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 55;
 	objects = {
 
 /* Begin PBXBuildFile section */
+		04A81D5C2ABD6F69003DFE73 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04A81D5B2ABD6F69003DFE73 /* LoginView.swift */; };
+		04A81D5E2ABE9394003DFE73 /* RegistrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04A81D5D2ABE9394003DFE73 /* RegistrationView.swift */; };
 		9EEF41B52AAA924000D48DA7 /* Prueba_de_conceptoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EEF41B42AAA924000D48DA7 /* Prueba_de_conceptoApp.swift */; };
 		9EEF41B72AAA924000D48DA7 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EEF41B62AAA924000D48DA7 /* ContentView.swift */; };
 		9EEF41B92AAA924100D48DA7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9EEF41B82AAA924100D48DA7 /* Assets.xcassets */; };
@@ -43,6 +45,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		04A81D5B2ABD6F69003DFE73 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		04A81D5D2ABE9394003DFE73 /* RegistrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegistrationView.swift; sourceTree = "<group>"; };
 		9EEF41B12AAA924000D48DA7 /* Prueba de concepto.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Prueba de concepto.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		9EEF41B42AAA924000D48DA7 /* Prueba_de_conceptoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Prueba_de_conceptoApp.swift; sourceTree = "<group>"; };
 		9EEF41B62AAA924000D48DA7 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -89,6 +93,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+<<<<<<< HEAD
+		04A81D602AC3E4FB003DFE73 /* View */ = {
+			isa = PBXGroup;
+			children = (
+				9EEF41B62AAA924000D48DA7 /* ContentView.swift */,
+				04A81D5D2ABE9394003DFE73 /* RegistrationView.swift */,
+				04A81D5B2ABD6F69003DFE73 /* LoginView.swift */,
+=======
 		9E46FD002AC1FE6A00B3FF84 /* Model */ = {
 			isa = PBXGroup;
 			children = (
@@ -109,6 +121,7 @@
 				9EF596A62AC21279008D168E /* SummaryView.swift */,
 				9EF596A82AC212A4008D168E /* AccountsView.swift */,
 				9EF596AA2AC2134B008D168E /* SettingsView.swift */,
+>>>>>>> develop
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -136,9 +149,14 @@
 		9EEF41B32AAA924000D48DA7 /* Prueba de concepto */ = {
 			isa = PBXGroup;
 			children = (
+<<<<<<< HEAD
+				04A81D602AC3E4FB003DFE73 /* View */,
+				9EEF41B42AAA924000D48DA7 /* Prueba_de_conceptoApp.swift */,
+=======
 				9EF596992AC1FF4B008D168E /* ModelView */,
 				9E46FD012AC1FE8700B3FF84 /* View */,
 				9E46FD002AC1FE6A00B3FF84 /* Model */,
+>>>>>>> develop
 				9EEF41B82AAA924100D48DA7 /* Assets.xcassets */,
 				9EEF41BA2AAA924100D48DA7 /* Preview Content */,
 			);
@@ -258,7 +276,7 @@
 				};
 			};
 			buildConfigurationList = 9EEF41AC2AAA924000D48DA7 /* Build configuration list for PBXProject "Prueba de concepto" */;
-			compatibilityVersion = "Xcode 14.0";
+			compatibilityVersion = "Xcode 13.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -308,17 +326,25 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+<<<<<<< HEAD
+				04A81D5C2ABD6F69003DFE73 /* LoginView.swift in Sources */,
+=======
 				9EF596A92AC212A4008D168E /* AccountsView.swift in Sources */,
 				9EF596A32AC2119E008D168E /* BudgetsView.swift in Sources */,
 				9EF5969F2AC2068E008D168E /* FinaceModelView.swift in Sources */,
 				9EF596A12AC2113B008D168E /* MainMenu.swift in Sources */,
 				9EF596A52AC211C9008D168E /* TagsView.swift in Sources */,
+>>>>>>> develop
 				9EEF41B72AAA924000D48DA7 /* ContentView.swift in Sources */,
 				9EF5969D2AC20176008D168E /* HistoryView.swift in Sources */,
 				9EF5969B2AC1FFA9008D168E /* FinanceModel.swift in Sources */,
 				9EEF41B52AAA924000D48DA7 /* Prueba_de_conceptoApp.swift in Sources */,
+<<<<<<< HEAD
+				04A81D5E2ABE9394003DFE73 /* RegistrationView.swift in Sources */,
+=======
 				9EF596A72AC21279008D168E /* SummaryView.swift in Sources */,
 				9EF596AB2AC2134B008D168E /* SettingsView.swift in Sources */,
+>>>>>>> develop
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -477,6 +503,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Prueba de concepto/Preview Content\"";
+				DEVELOPMENT_TEAM = 345564K6LJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -484,6 +511,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -505,6 +533,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Prueba de concepto/Preview Content\"";
+				DEVELOPMENT_TEAM = 345564K6LJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -512,6 +541,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -532,8 +562,9 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 345564K6LJ;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "Team25-Moviles.Prueba-de-conceptoTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -551,8 +582,9 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 345564K6LJ;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "Team25-Moviles.Prueba-de-conceptoTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -569,7 +601,9 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 345564K6LJ;
 				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "Team25-Moviles.Prueba-de-conceptoUITests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -586,7 +620,9 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 345564K6LJ;
 				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "Team25-Moviles.Prueba-de-conceptoUITests";
 				PRODUCT_NAME = "$(TARGET_NAME)";

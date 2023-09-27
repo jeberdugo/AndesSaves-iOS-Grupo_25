@@ -6,12 +6,14 @@
 //
 
 import SwiftUI
+import WebKit
+
 
 
 struct FinanceApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            LoginView()
         }
     }
 }
@@ -135,10 +137,3 @@ struct ContentView: View {
          }
      }
     
-
-
-    
-
-
-
-
