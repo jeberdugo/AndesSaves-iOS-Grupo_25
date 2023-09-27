@@ -75,6 +75,16 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		04A81D602AC3E4FB003DFE73 /* View */ = {
+			isa = PBXGroup;
+			children = (
+				9EEF41B62AAA924000D48DA7 /* ContentView.swift */,
+				04A81D5D2ABE9394003DFE73 /* RegistrationView.swift */,
+				04A81D5B2ABD6F69003DFE73 /* LoginView.swift */,
+			);
+			path = View;
+			sourceTree = "<group>";
+		};
 		9EEF41A82AAA924000D48DA7 = {
 			isa = PBXGroup;
 			children = (
@@ -98,12 +108,10 @@
 		9EEF41B32AAA924000D48DA7 /* Prueba de concepto */ = {
 			isa = PBXGroup;
 			children = (
+				04A81D602AC3E4FB003DFE73 /* View */,
 				9EEF41B42AAA924000D48DA7 /* Prueba_de_conceptoApp.swift */,
-				9EEF41B62AAA924000D48DA7 /* ContentView.swift */,
 				9EEF41B82AAA924100D48DA7 /* Assets.xcassets */,
 				9EEF41BA2AAA924100D48DA7 /* Preview Content */,
-				04A81D5B2ABD6F69003DFE73 /* LoginView.swift */,
-				04A81D5D2ABE9394003DFE73 /* RegistrationView.swift */,
 			);
 			path = "Prueba de concepto";
 			sourceTree = "<group>";
