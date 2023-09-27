@@ -23,66 +23,66 @@ import SwiftUI
             }.frame(maxWidth: 400, maxHeight: 60)
             Spacer()
             VStack() {
-                
-           HStack() {
-                        Image(systemName: "dollarsign.circle")
-                            .foregroundColor(.blue)
-                            .padding(.leading, 16)
-                            .frame(width: 30, height: 30)
+                                HStack() {
+                                    Image(systemName: "dollarsign.circle")
+                                        .foregroundColor(.blue)
+                                        .padding(.leading, 16)
+                                        .frame(width: 30, height: 30)
 
-                        SectionView(title: "Currency")
-                            .font(.headline)
-                            .padding(.leading, 16)
-                            .foregroundColor(.primary)
+                                    SectionView(title: "Currency")
+                                        .font(.headline)
+                                        .padding(.leading, 16)
+                                        .foregroundColor(.primary)
 
-                        Spacer()}
+                                    Spacer()}
 
-                    Divider()
+                                Divider()
 
-                    HStack(){
-                        Image(systemName: "globe")
-                            .foregroundColor(.blue)
-                            .padding(.leading, 16)
-                            .frame(width: 30, height: 30)
+                                HStack(){
+                                    Image(systemName: "globe")
+                                        .foregroundColor(.blue)
+                                        .padding(.leading, 16)
+                                        .frame(width: 30, height: 30)
 
-                        SectionView(title: "Language")
-                            .font(.headline)
-                            .padding(.leading, 16)
-                            .foregroundColor(.primary)
+                                    SectionView(title: "Language")
+                                        .font(.headline)
+                                        .padding(.leading, 16)
+                                        .foregroundColor(.primary)
 
-                        Spacer()}
+                                    Spacer()}
 
-                    Divider()
+                                Divider()
 
-                    HStack() {
-                        Image(systemName: "bell")
-                            .foregroundColor(.blue)
-                            .padding(.leading, 16)
-                            .frame(width: 30, height: 30)
+                                HStack() {
+                                    Image(systemName: "bell")
+                                        .foregroundColor(.blue)
+                                        .padding(.leading, 16)
+                                        .frame(width: 30, height: 30)
 
-                        SectionView(title: "Notifications")
-                            .font(.headline)
-                            .padding(.leading, 16)
-                            .foregroundColor(.primary)
+                                    SectionView(title: "Notifications")
+                                        .font(.headline)
+                                        .padding(.leading, 16)
+                                        .foregroundColor(.primary)
 
-                        Spacer()}
+                                    Spacer()}
 
-                }.background(Color.white)
-                .padding(.top, -650)
+                            }.background(Color.white)
+                            .padding(.top, -650)
 
-        }
-    }
+                    }
+                }
 
-    struct SectionView: View {
-        var title: String
+                struct SectionView: View {
+                    var title: String
 
-        var body: some View {
-            HStack {
-                Text(title)
-                    .font(.headline)
-                    .padding(.leading, 16)
-                Spacer()
-            }
-            .frame(height: 40) // Adjust the height as needed
-        }
-    }
+                    var body: some View {
+                        HStack {
+                            Text(title)
+                                .font(.headline)
+                                .padding(.leading, 16)
+
+                            Spacer()
+                        }
+                        .frame(height: 40) // Adjust the height as needed
+                    }
+                }

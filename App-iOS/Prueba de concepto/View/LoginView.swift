@@ -7,7 +7,7 @@ struct LoginView: View {
     var body: some View {
         NavigationView {
             VStack {
-                Image("Image") // Replace "YourLogo" with the name of your logo image asset
+                Image("Logo")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 300, height: 200) // Adjust the size as needed            TextField("Username", text: $username)
@@ -55,7 +55,7 @@ struct LoginView: View {
                     }
                 )
                 .padding()
-                NavigationLink(destination: RegistrationView()) {
+                NavigationLink(destination: RegisterView()) {
                     Text("Don't have an account? Click here")
                         .foregroundColor(Color.blue) // Set your desired text color
                         .underline() // Add an underline to the text

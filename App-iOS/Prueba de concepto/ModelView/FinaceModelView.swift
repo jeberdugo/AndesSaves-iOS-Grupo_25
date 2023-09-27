@@ -15,8 +15,6 @@ final class ContentViewModel: ObservableObject {
     @Published public var transactionSource = ""
     @Published public var selectedType: Int = 0 // 0 for Income, 1 for Expense
     @Published public var selectedExpenseCategory: Int = 0
-
-    var expenseCategories = ["Food", "Transport", "House", "Others"]
 }
 
 
