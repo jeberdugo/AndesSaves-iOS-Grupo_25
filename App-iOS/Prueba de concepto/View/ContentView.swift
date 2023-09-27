@@ -47,7 +47,59 @@ struct ContentView: View {
                                 .cornerRadius(10)
                         }
                         .sheet(isPresented: $viewModel.isAddingTransaction) {
+                             ZStack() {
+                                //Color(red: 21/255, green: 191/255, blue: 129/255).edgesIgnoringSafeArea(.all)
+                                Color(selectedType == 1 ? .red : .green) // Red for Expense, Green for Income
+                                                        .edgesIgnoringSafeArea(.all)
+                                VStack {
+                                    Text("History")
+                                        .font(.title)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.white)
+                                }
+                            }
+                            .frame(maxWidth: 400, maxHeight: 60)
+                            Spacer()
                             // Add transaction view goes here
+                            Form {
+                                            Section(header: Text("Transaction Details")) {
+                                                TextField("Name", text: $transactionName)
+                                                TextField("Amount", text: $transactionAmount)
+                                                TextField("Source", text: $transactionSource)
+                                            }
+
+                                            Section(header: Text("Type")) {
+                                                Picker(selection: $selectedType, label: Text("Type")) {
+                                                    Text("Income").tag(0)
+                                                    Text("Expense").tag(1)
+                                                }
+                                                .pickerStyle(SegmentedPickerStyle())
+                                                .padding(.horizontal)
+                                            }
+
+                                            if selectedType == 1 {
+                                                Section(header: Text("Expense Category")) {
+                                                    Picker("Select Category", selection: $selectedExpenseCategory) {
+                                                        ForEach(0..<expenseCategories.count) { index in
+                                                            Text(expenseCategories[index])
+                                                        }
+                                                    }
+                                                    .pickerStyle(SegmentedPickerStyle())
+                                                }
+                                            }
+                                        }
+
+                                        Button(action: {
+                                            // Add action logic here to save the transaction
+                                        }) {
+                                            Text("Add")
+                                                .foregroundColor(.white)
+                                                .frame(maxWidth: .infinity)
+                                                .padding()
+                                                .background(selectedType == 1 ? Color.red : Color.green)
+                                                .cornerRadius(10)
+                                        }
+                                        .padding()
                         }
                     }
                     Spacer(minLength: 10)
