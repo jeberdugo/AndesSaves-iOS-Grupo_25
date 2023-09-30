@@ -80,6 +80,7 @@ import WebKit
                     .cornerRadius(20)
                 Text(account.title)
                     .font(.headline)
+
             }
         }
     }

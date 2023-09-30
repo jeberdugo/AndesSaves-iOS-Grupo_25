@@ -19,6 +19,7 @@ struct FinanceApp: App {
 }
 struct ContentView: View {
     @StateObject private var viewModel = ContentViewModel()
+    @StateObject private var functions = GlobalFunctions()
     var expenseCategories = ["Food", "Transport", "House", "Others"]
     var body: some View {
         NavigationView {
@@ -64,6 +65,7 @@ struct ContentView: View {
                             .frame(maxWidth: 400, maxHeight: 60)
                             Spacer()
                             // Add transaction view goes here
+                            VStack{
                             Form {
                                 Section(header: Text("Transaction Details")) {
                                     TextField("Name", text: $viewModel.transactionName)
@@ -100,6 +102,8 @@ struct ContentView: View {
                                     .cornerRadius(10)
                             }
                             .padding()
+                          }
+                            .background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
                         }
                     }
                     Spacer(minLength: 10)
