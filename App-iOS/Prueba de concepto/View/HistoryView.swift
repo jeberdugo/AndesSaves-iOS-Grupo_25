@@ -39,22 +39,22 @@ struct HistoryView: View {
                         VStack{
                             Spacer(minLength: 40)
                             List {
-                                                    ForEach(viewModel.transactions) { transaction in
-                                                            Text(transaction.name)
-                                                                .font(.headline)
-                                                                .foregroundColor(functions.isDaytime ? Color(red: 23/255, green: 24/255, blue: 25/255):  Color.white) 
-                                                        if transaction.amount >= 0 {
-                                                                Text("$\(String(format: "%.2f", transaction.amount))")
-                                                                    .font(.subheadline)
-                                                                    .foregroundColor(.green)
-                                                            } else {
-                                                                Text("$\(String(format: "%.2f", transaction.amount))")
-                                                                    .font(.subheadline)
-                                                                    .foregroundColor(.red)
-                                                            }
-                                                            Text(viewModel.formatDate(transaction.date))
-                                                                .font(.subheadline)
-                                                                .foregroundColor(.secondary)                                                    }
+                                    ForEach(viewModel.transactions) { transaction in
+                                        Text(transaction.name)
+                                            .font(.headline)
+                                            .foregroundColor(functions.isDaytime ? Color(red: 23/255, green: 24/255, blue: 25/255):  Color.white)
+                                                if transaction.amount >= 0 {
+                                                    Text("$\(String(format: "%.2f", transaction.amount))")
+                                                            .font(.subheadline)
+                                                            .foregroundColor(.green)
+                                                } else {
+                                                    Text("$\(String(format: "%.2f", transaction.amount))")
+                                                            .font(.subheadline)
+                                                            .foregroundColor(.red)
+                                                        }
+                                                    Text(viewModel.formatDate(transaction.date))
+                                                            .font(.subheadline)
+                                                            .foregroundColor((functions.isDaytime ? Color.gray : Color(red: 213/255, green: 217/255, blue: 212/255)))                                                    }
                                                     .onDelete { indexSet in
                                                         // Opcion para eliminar un elemento de la lista
                                                         viewModel.removeTransaction(indexSet)
@@ -62,8 +62,8 @@ struct HistoryView: View {
                                                     .toolbar {
                                                         ToolbarItem(placement: .navigationBarTrailing) {
                                                             EditButton()
-                                                        }
-                                                    }
+                                }
+                            }
                         }
                     }
                 }
