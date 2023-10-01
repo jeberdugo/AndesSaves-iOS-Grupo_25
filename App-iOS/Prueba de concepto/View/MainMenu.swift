@@ -16,16 +16,14 @@ struct MainMenu: View {
     var body: some View {
         VStack {
             ZStack {
-                                Rectangle()
-                                .fill(Color.white)
-                                    .mask(TopRoundedRectangle(radius: 30))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 30)
-                                            .fill(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
-                                            .shadow(radius: 3, x: 0, y: -3)
-
-                                    )
-                                    .edgesIgnoringSafeArea(/*@START_MENU_TOKEN@*/.all/*@END_MENU_TOKEN@*/)
+                Rectangle()
+                    .fill(Color.white)
+                    .mask(TopRoundedRectangle(radius: 30))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 30)
+                            .fill(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
+                            .shadow(radius: 3, x: 0, y: -3))
+                            .edgesIgnoringSafeArea(/*@START_MENU_TOKEN@*/.all/*@END_MENU_TOKEN@*/)
                 VStack {
                 Spacer(minLength: 50)
                 LazyVGrid(columns: [

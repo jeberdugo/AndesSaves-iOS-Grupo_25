@@ -56,6 +56,10 @@ final class HistoryViewModel: ObservableObject {
 
 final class BudgetsViewModel: ObservableObject {
     
+    
+    
+    // Vista de Add Budgets
+    
 }
 
 
