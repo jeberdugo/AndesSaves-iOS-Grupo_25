@@ -20,7 +20,7 @@ struct FinanceApp: App {
 struct ContentView: View {
     @StateObject private var viewModel = ContentViewModel()
     @StateObject private var functions = GlobalFunctions()
-    var expenseCategories = ["Food", "Transport", "House", "Others"]
+    
     var body: some View {
         NavigationView {
             ZStack() {
@@ -49,61 +49,9 @@ struct ContentView: View {
                                 .cornerRadius(10)
                         }
                         .sheet(isPresented: $viewModel.isAddingTransaction) {
-                            ZStack() {
-                                //Color(red: 21/255, green: 191/255, blue: 129/255).edgesIgnoringSafeArea(.all)
-                                if(viewModel.selectedType == 1){
-                                    Color(hex:"EE446D ").edgesIgnoringSafeArea(.all)                                                                    }
-                                else{
-                                    Color(hex:"12CD8A").edgesIgnoringSafeArea(.all)                                  }
-                                VStack {
-                                    Text("History")
-                                        .font(.title)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(.white)
-                                }
-                            }
-                            .frame(maxWidth: 400, maxHeight: 60)
-                            Spacer()
-                            // Add transaction view goes here
-                            VStack{
-                            Form {
-                                Section(header: Text("Transaction Details")) {
-                                    TextField("Name", text: $viewModel.transactionName)
-                                    TextField("Amount", text: $viewModel.transactionAmount)
-                                    TextField("Source", text: $viewModel.transactionSource)
-                                }
-                                
-                                Section(header: Text("Type")) {
-                                    Picker(selection: $viewModel.selectedType, label: Text("Type")) {
-                                        Text("Income").tag(0)
-                                        Text("Expense").tag(1)
-                                    }
-                                    .pickerStyle(SegmentedPickerStyle())
-                                    .padding(.horizontal)                                    }
-                                if viewModel.selectedType == 1 {
-                                    Section(header: Text("Expense Category")) {
-                                        Picker("Select Category", selection: $viewModel.selectedExpenseCategory) {
-                                            ForEach(0..<expenseCategories.count) { index in
-                                                Text(expenseCategories[index])
-                                            }
-                                        }
-                                        .pickerStyle(SegmentedPickerStyle())
-                                    }
-                                }
-                            }
-                            Button(action: {
-                                // Add action logic here to save the transaction
-                            }) {
-                                Text("Add")
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(viewModel.selectedType == 1 ? Color(hex:"EE446D") : Color(hex:"12CD8A"))
-                                    .cornerRadius(10)
-                            }
-                            .padding()
-                          }
-                            .background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
+                            AddTransactionView()
+                                .environmentObject(viewModel)
+                                .environmentObject(functions)
                         }
                     }
                     Spacer(minLength: 10)
@@ -113,8 +61,173 @@ struct ContentView: View {
             }
         }
         .navigationBarBackButtonHidden(/*@START_MENU_TOKEN@*/true/*@END_MENU_TOKEN@*/)
+        }
+    }
+
+
+struct AddTransactionView: View {
+    @EnvironmentObject var viewModel: ContentViewModel
+    @EnvironmentObject var functions: GlobalFunctions
+    @State private var showImagePicker = false
+    @State private var image: Image?
+    @State private var isShowingImage = false
+    let expenseCategories = ["Food", "Transport", "House", "Others"]
+    
+    var body: some View {
+        ZStack() {
+            if viewModel.selectedType == 1 {
+                Color(hex: "EE446D").edgesIgnoringSafeArea(.all)
+            } else {
+                Color(hex: "12CD8A").edgesIgnoringSafeArea(.all)
+            }
+            VStack {
+                Text("History")
+                    .font(.title)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+            }
+        }
+        .frame(maxWidth: 400, maxHeight: 60)
+        
+        Spacer()
+        
+        // Add transaction view goes here
+        VStack {
+            Form {
+                Section(header: Text("Transaction Details")) {
+                    TextField("Name", text: $viewModel.transactionName)
+                    TextField("Amount", text: $viewModel.transactionAmount)
+                    TextField("Source", text: $viewModel.transactionSource)
+                }
+                
+                Section(header: Text("Type")) {
+                    Picker(selection: $viewModel.selectedType, label: Text("Type")) {
+                        Text("Income").tag(0)
+                        Text("Expense").tag(1)
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                    .padding(.horizontal)
+                }
+                
+                if viewModel.selectedType == 1 {
+                    Section(header: Text("Expense Category")) {
+                        Picker("Select Category", selection: $viewModel.selectedExpenseCategory) {
+                            ForEach(0..<expenseCategories.count) { index in
+                                Text(expenseCategories[index])
+                            }
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                    }
+                }
+            }
+            
+            if isShowingImage {
+                ZStack {
+                    image?
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 200, height: 200) // Specify the desired image size
+                    
+                    Button(action: {
+                        // Add action logic to delete the image here
+                        image = nil
+                        isShowingImage = false
+                    }) {
+                        Image(systemName: "minus.circle")
+                            .foregroundColor(.red) // Customize the color of the delete button
+                    }
+                    .padding(8) // Adjust the padding as needed
+                }
+                .onTapGesture {
+                    isShowingImage.toggle()
+                }
+                .contextMenu {
+                    Button("Delete") {
+                        image = nil
+                        isShowingImage = false
+                    }
+                }
+            } else {
+                Button(action: {
+                    // Toggle the camera sheet
+                    showImagePicker.toggle()
+                }) {
+                    Text("Take Photo")
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(viewModel.selectedType == 1 ? Color(hex: "EE446D") : Color(hex: "12CD8A"))
+                        .cornerRadius(10)
+                }
+                .padding()
+            }
+            
+            Button(action: {
+                // Add action logic here to save the transaction
+            }) {
+                Text("Add")
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(viewModel.selectedType == 1 ? Color(hex: "EE446D") : Color(hex: "12CD8A"))
+                    .cornerRadius(10)
+            }
+            .padding()
+        }
+        .background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
+        
+        // Camera sheet
+        .sheet(isPresented: $showImagePicker) {
+            ImagePicker(image: $image, isShowingImage: $isShowingImage)
+        }
     }
 }
+
+
+    
+struct ImagePicker: UIViewControllerRepresentable {
+    @Binding var image: Image?
+    @Binding var isShowingImage: Bool
+    @Environment(\.presentationMode) var presentationMode
+    
+    class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
+        let parent: ImagePicker
+        
+        init(_ parent: ImagePicker) {
+            self.parent = parent
+        }
+        
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+            if let uiImage = info[.originalImage] as? UIImage {
+                parent.image = Image(uiImage: uiImage)
+                parent.isShowingImage = true
+            }
+            parent.presentationMode.wrappedValue.dismiss()
+        }
+        
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.presentationMode.wrappedValue.dismiss()
+        }
+    }
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    func makeUIViewController(context: UIViewControllerRepresentableContext<ImagePicker>) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.delegate = context.coordinator
+        picker.sourceType = .camera // Set the source type to the camera
+        return picker
+    }
+    
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: UIViewControllerRepresentableContext<ImagePicker>) {
+    }
+}
+
+
+
+
 
 
 // SELECTOR DE VISTAS SECUNDARIAS

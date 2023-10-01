@@ -95,7 +95,7 @@ import SwiftUI
                         Text(viewModel.isEditMode ? "Done" : "Edit")
                     }
                 }
-            }
+            }.edgesIgnoringSafeArea(/*@START_MENU_TOKEN@*/.all/*@END_MENU_TOKEN@*/)
             .sheet(isPresented: $viewModel.isAddTagDialogPresented) {
                 AddTagDialog(isPresented: $viewModel.isAddTagDialogPresented, tagName: $viewModel.newTagName, addTagAction: viewModel.addNewTag)
             }
