@@ -7,6 +7,7 @@
 
 import SwiftUI
 import WebKit
+import UserNotifications
 
 
 
@@ -17,9 +18,11 @@ struct FinanceApp: App {
         }
     }
 }
+
 struct ContentView: View {
     @StateObject private var viewModel = ContentViewModel()
     @StateObject private var functions = GlobalFunctions()
+    @StateObject private var History = HistoryViewModel()
     
     var body: some View {
         NavigationView {
@@ -27,6 +30,7 @@ struct ContentView: View {
                 Color(hex:"12CD8A").edgesIgnoringSafeArea(.all)
                 
                 VStack() {
+                    Spacer(minLength: 20)
                     VStack() {
                         //Color(red: 78, green: 147, blue: 122)
                         Spacer(minLength: 5)
@@ -34,8 +38,8 @@ struct ContentView: View {
                             .font(.title)
                             .fontWeight(.bold)
                             .foregroundColor(.white)
-                        
-                        Text("$\(String(format: "%.2f", viewModel.balance))")
+                       
+                        Text("$\(String(format: "%.2f", History.calculateBalance()))")
                             .font(.largeTitle)
                             .foregroundColor(.white)
                         
@@ -52,6 +56,7 @@ struct ContentView: View {
                             AddTransactionView()
                                 .environmentObject(viewModel)
                                 .environmentObject(functions)
+                                .environmentObject(History)
                         }
                     }
                     Spacer(minLength: 10)
@@ -68,6 +73,7 @@ struct ContentView: View {
 struct AddTransactionView: View {
     @EnvironmentObject var viewModel: ContentViewModel
     @EnvironmentObject var functions: GlobalFunctions
+    @EnvironmentObject var historyViewModel: HistoryViewModel
     @State private var showImagePicker = false
     @State private var image: Image?
     @State private var isShowingImage = false
@@ -164,6 +170,7 @@ struct AddTransactionView: View {
             
             Button(action: {
                 // Add action logic here to save the transaction
+                checkAndSendNotificationIfNeeded()
             }) {
                 Text("Add")
                     .foregroundColor(.white)
@@ -225,6 +232,32 @@ struct ImagePicker: UIViewControllerRepresentable {
     }
 }
 
+
+func checkAndSendNotificationIfNeeded() {
+    print("Checking balance and sending notification")
+    let History = HistoryViewModel()
+    @State var showNegativeBalanceAlert = false
+    if History.calculateBalance() < 0 {
+        // Create a notification content
+        
+        let content = UNMutableNotificationContent()
+        content.title = "Negative Balance Alert"
+        content.body = "Your balance is negative. Please review your transactions."
+        
+        // Create a trigger for the notification (e.g., deliver immediately)
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
+        
+        // Create a notification request
+        let request = UNNotificationRequest(identifier: "NegativeBalance", content: content, trigger: trigger)
+        
+        // Schedule the notification
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Error scheduling notification: \(error)")
+            }
+        }
+    }
+}
 
 
 
