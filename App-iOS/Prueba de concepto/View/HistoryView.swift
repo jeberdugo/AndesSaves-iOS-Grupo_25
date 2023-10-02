@@ -62,7 +62,7 @@ struct HistoryView: View {
                                     .onDelete { indexSet in
                                         viewModel.removeTransaction(indexSet)
                                     }
-                                    .listRowBackground(functions.isDaytime ? Color.white : Color(red: 242/255, green: 0/255, blue: 242/255))
+                                    .listRowBackground(functions.isDaytime ? Color.white : Color(red: 242/255, green: 242/255, blue: 242/255))
                                 }
                                  .scrollContentBackground(.hidden)
                                  .background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
