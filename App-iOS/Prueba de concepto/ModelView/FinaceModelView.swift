@@ -11,7 +11,7 @@ final class ContentViewModel: ObservableObject {
     @Published public var balance: Double = 1000.0
     @Published public var isAddingTransaction = false
     @Published public var transactionName = ""
-    @Published public var transactionAmount = ""
+    @Published public var transactionAmount  = ""
     @Published public var transactionSource = ""
     @Published public var selectedType: Int = 0 // 0 for Income, 1 for Expense
     @Published public var selectedExpenseCategory: Int = 0

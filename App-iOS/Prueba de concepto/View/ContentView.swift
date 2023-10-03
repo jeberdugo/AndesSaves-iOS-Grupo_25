@@ -16,6 +16,7 @@ struct FinanceApp: App {
     }
 }
 struct ContentView: View {
+    @State private var showAlert = false
     @StateObject private var viewModel = ContentViewModel()
     var expenseCategories = ["Food", "Transport", "House", "Others"]
     var body: some View {
@@ -66,6 +67,8 @@ struct ContentView: View {
                                 Section(header: Text("Transaction Details")) {
                                     TextField("Name", text: $viewModel.transactionName)
                                     TextField("Amount", text: $viewModel.transactionAmount)
+                                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                                        .keyboardType(.decimalPad)
                                     TextField("Source", text: $viewModel.transactionSource)
                                 }
                                 
@@ -88,7 +91,12 @@ struct ContentView: View {
                                 }
                             }
                             Button(action: {
-                                // Add action logic here to save the transaction
+                                
+                                if viewModel.selectedType == 1 && viewModel.balance-(Double(viewModel.transactionAmount) ?? 0.0) < 0 {
+                                    showAlert = true
+                                } else {
+                                                // Add your action logic here to save the transaction
+                                        }
                             }) {
                                 Text("Add")
                                     .foregroundColor(.white)
@@ -98,6 +106,18 @@ struct ContentView: View {
                                     .cornerRadius(10)
                             }
                             .padding()
+                            .alert(isPresented: $showAlert) {
+                                Alert(
+                                    title: Text("Warning: Negative Balance"),
+                                    message: Text("Your expense transaction will result in a negative balance. Are you sure you want to proceed?"),
+                                    primaryButton: .destructive(
+                                        Text("Confirm"),
+                                        action: {
+                                            // Add your action logic here to handle the user's confirmation
+                                        }
+                                    ),
+                                    secondaryButton: .cancel())
+                            }
                         }
                     }
                     Spacer(minLength: 10)

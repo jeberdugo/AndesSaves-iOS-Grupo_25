@@ -10,6 +10,7 @@ import SwiftUI
 // Vista para "Budgets"
 struct BudgetsView: View {
       @State private var isAddBudgetViewPresented = false
+      @State private var contributionsInput: String = ""
 
           var body: some View {
 
@@ -65,24 +66,70 @@ struct BudgetsView: View {
                           .font(.title2)
                           .fontWeight(.bold)
                           .padding(.top, 20)
-
-                      ItemRow(name: "House", date: "2023-09-25", percentage: "60%")
+                      
+                     
+                      NavigationLink(destination: BudgetItemDetailView(
+                          name: "House",
+                          date: "2023-09-25",
+                          totalContributions: 410/* Provide the total contributions value */,
+                          budgetAmount: 2000 /* Provide the budget amount value */,
+                          contributions: [], newContribution: $contributionsInput/* Provide the array of contributions */
+                          
+                      )) {
+                          ItemRow(name: "House", date: "2023-09-25", percentage: "60%")
+                      }
 
                       Divider()
 
-                      ItemRow(name: "Car", date: "2023-09-26", percentage: "80%")
+                      NavigationLink(
+                          destination: BudgetItemDetailView(
+                              name: "Car",
+                              date: "2023-09-26",
+                              totalContributions: 410/* Provide the total contributions value */,
+                              budgetAmount: 2000 /* Provide the budget amount value */,
+                              contributions: [], newContribution: $contributionsInput
+                          )
+                      ) {
+                          ItemRow(name: "Car", date: "2023-09-26", percentage: "80%")
+                      }
+                      
 
                       // Section: Group
                       Text("Group")
                           .font(.title2)
                           .fontWeight(.bold)
                           .padding(.top, 20)
-
-                      ItemRow(name: "Europe", date: "2023-09-27", percentage: "75%")
+                      
+                      
+                      
+                      NavigationLink(
+                          destination: BudgetItemDetailView(
+                              name: "Europe",
+                              date: "2023-09-27",
+                              totalContributions: 410/* Provide the total contributions value */,
+                              budgetAmount: 2000 /* Provide the budget amount value */,
+                              contributions: [], newContribution: $contributionsInput
+                          )
+                      ) {
+                          ItemRow(name: "Europe", date: "2023-09-27", percentage: "75%")
+                      }
 
                       Divider()
+                      
+                      NavigationLink(
+                          destination: BudgetItemDetailView(
+                              name: "Car",
+                              date: "2023-09-28",
+                              totalContributions: 410/* Provide the total contributions value */,
+                              budgetAmount: 2000 /* Provide the budget amount value */,
+                              contributions: [10,10], newContribution: $contributionsInput
+                          )
+                      ) {
+                          ItemRow(name: "Car", date: "2023-09-28", percentage: "90%")
+                      }
 
-                      ItemRow(name: "Car", date: "2023-09-28", percentage: "90%")
+                      
+                      
                   }
                   .padding(.top, -650)
                   .background(Color.white)
@@ -134,6 +181,7 @@ struct BudgetsView: View {
       @State private var selectedType = 0 // 0 for Individual, 1 for Group
       @State private var memberName = ""
       @State private var groupMembers: [String] = []
+      @State private var contributions: [Double] = []
       var body: some View {
           ZStack() {
               Color(red: 21/255, green: 191/255, blue: 129/255).edgesIgnoringSafeArea(.all)
@@ -232,3 +280,94 @@ struct BudgetsView: View {
           AddBudgetView()
   }
   }
+
+struct BudgetItemDetailView: View {
+    var name: String
+    var date: String
+    var totalContributions: Double // Total contributions
+    var budgetAmount: Double // Budget amount
+    var contributions: [Double] // All contributions
+    @Binding var newContribution: String// Input for new contribution
+    
+    // Create a local non-optional variable
+    @State private var contributionInput: String = ""
+    
+    
+            
+
+    var body: some View {
+        ZStack() {
+            Color(red: 21/255, green: 191/255, blue: 129/255).edgesIgnoringSafeArea(.all)
+            VStack {
+                Text(name)
+                    .font(.title)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+            }
+        }.frame(maxWidth: 400, maxHeight: 60)
+        Spacer()
+        
+        VStack {
+            // Percentage Chart
+            ZStack {
+                Circle()
+                    .stroke(lineWidth: 15.0)
+                    .opacity(0.3)
+                    .foregroundColor(Color.gray)
+
+                Circle()
+                    .trim(from: 0.0, to: CGFloat(min(totalContributions / budgetAmount, 1.0)))
+                    .stroke(style: StrokeStyle(lineWidth: 15.0, lineCap: .round, lineJoin: .round))
+                    .foregroundColor(Color.green)
+                    .rotationEffect(Angle(degrees: -90))
+
+                Text("\(Int((totalContributions / budgetAmount) * 100))%")
+                    .font(.title)
+                    .fontWeight(.bold)
+            }
+            .padding()
+            
+
+            Text("\(date)")
+                .font(.subheadline)
+                .padding()
+            
+
+            Text("0/$\(totalContributions)")
+                .font(.subheadline)
+                .padding()
+
+            
+           
+
+            
+
+            // Input for New Contribution
+            TextField("Enter Contribution", text: $newContribution)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .keyboardType(.decimalPad)
+                .padding()
+
+            Button(action: {
+                //if let amount = Double(newContribution) {
+                  //      contributions.append(amount)
+                    //    newContribution = ""
+                    //}
+            }) {
+                Text("Add Contribution")
+                    .foregroundColor(.green)
+            }
+            .padding()
+
+            // History of Contributions
+            Text("Contributions History:")
+                .font(.headline)
+                .padding(.top)
+
+            List(contributions.map { String(format: "$%.2f", $0) }, id: \.self) { contribution in
+                Text(contribution)
+            }
+        }
+        //.navigationBarTitle(Text("Item Details"), displayMode: .inline)
+    }
+}
