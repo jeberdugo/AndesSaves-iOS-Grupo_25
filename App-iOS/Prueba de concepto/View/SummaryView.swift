@@ -12,19 +12,22 @@ import SwiftUI
         @StateObject private var functions = GlobalFunctions()
         
         var body: some View {
-            ZStack() {
-                Color(red: 21/255, green: 191/255, blue: 129/255).edgesIgnoringSafeArea(.all)
-                VStack {
-                    Text("Summary")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
+            VStack(){
+                ZStack() {
+                    Color(red: 21/255, green: 191/255, blue: 129/255).edgesIgnoringSafeArea(.all)
+                    VStack {
+                        Text("Summary")
+                            .font(.title)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                    }
+                }.frame(maxWidth: 400, maxHeight: 60)
+                Spacer()
+                VStack() {
+                    
                 }
-            }.frame(maxWidth: 400, maxHeight: 60)
-            Spacer()
-            VStack() {
-                
-            }.background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
+            }
+            .background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
         }
     }
     

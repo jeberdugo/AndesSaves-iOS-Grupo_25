@@ -6,8 +6,11 @@ struct LoginView: View {
     @ObservedObject var viewModel = LoginViewModel()
     @State private var selection: Bool? = false
     @State private var showNextView = false
+    @StateObject private var functions = GlobalFunctions()
+
     var body: some View {
         NavigationView {
+            VStack{
             VStack {
                 Image("Logo")
                     .resizable()
@@ -76,8 +79,9 @@ struct LoginView: View {
                         .underline() // Add an underline to the text
                 }
             }
-        .padding()
+            .padding()
             Spacer()
+            }.background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
         }.navigationBarBackButtonHidden(true)
     }
 }
