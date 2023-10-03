@@ -3,7 +3,9 @@ import SwiftUI
 struct LoginView: View {
     @State private var email = ""
     @State private var password = ""
-
+    @ObservedObject var viewModel = LoginViewModel()
+    @State private var selection: Bool? = false
+    @State private var showNextView = false
     var body: some View {
         NavigationView {
             VStack {
@@ -43,18 +45,31 @@ struct LoginView: View {
                 }
                 .padding()
                 
+                
                 NavigationLink(
                     destination: ContentView(),
-                    label: {
-                        Text("Login")
-                            .foregroundColor(Color.white)
-                            .padding(.horizontal, 35.0)
-                            .padding(.vertical, 10.0)
-                            .background(Color(hex:"12CD8A"))
-                            .cornerRadius(10)
-                    }
-                )
+                    isActive: $showNextView
+                ){
+                    EmptyView()
+                }
+                
+                Button(action: {
+                    viewModel.login(email: self.email, password: self.password)
+                    
+                    if viewModel.isLoggedIn {
+                                            self.showNextView = true
+                                        }
+                }) {
+                    Text("Login")
+                        .foregroundColor(Color.white)
+                        .padding(.horizontal, 35.0)
+                        .padding(.vertical, 10.0)
+                        .background(Color(hex:"12CD8A"))
+                        .cornerRadius(10)
+                }
                 .padding()
+                
+                
                 NavigationLink(destination: RegisterView()) {
                     Text("Don't have an account? Click here")
                         .foregroundColor(Color.blue) // Set your desired text color

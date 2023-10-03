@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct RegisterView: View {
+    @StateObject private var viewModel = RegisterViewModel()
     @State private var email = ""
     @State private var name = ""
     @State private var phone = ""
@@ -91,9 +92,7 @@ struct RegisterView: View {
                 .padding()
 
                 Button(action: {
-                    // Implement your registration logic here
-                    // Validate the user input and perform registration
-                    // If successful, navigate to the main content view
+                    viewModel.register(name: self.name,phoneNumber: self.phone, password: self.password, email: self.email)
                 }) {
                     Text("Register")
                         .foregroundColor(Color.white)
