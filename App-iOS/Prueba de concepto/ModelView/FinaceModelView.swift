@@ -70,11 +70,6 @@ final class BudgetsViewModel: ObservableObject {
 
 final class TagsViewModel: ObservableObject {
     @Published var tagsItems: [TagsItem] = [
-        TagsItem(title: "Food", imageName: "Food"),
-        TagsItem(title: "Transportation", imageName: "Transportation"),
-        TagsItem(title: "Housing", imageName: "Housing"),
-        TagsItem(title: "Health", imageName: "Health"),
-        TagsItem(title: "Entertainment", imageName: "Entertainment"),
         TagsItem(title: "Add", imageName: "Add")
     ]
 
@@ -87,7 +82,108 @@ final class TagsViewModel: ObservableObject {
         let newTag = TagsItem(title: tagName, imageName: "DefaultImage") // Ajusta la imagen según tus necesidades.
         tagsItems.insert(newTag, at: tagsItems.count - 1)
     }
-}
+    
+    @Published var categories = [Category]()
+
+        func createCategory(name: String, user: String) {
+            let url = URL(string: "https://andesaves-backend.onrender.com/categories/new")!
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+
+            let parameters: [String: Any] = [
+                "name": name,
+                "user": user
+            ]
+
+            do {
+                request.httpBody = try JSONSerialization.data(withJSONObject: parameters, options: .prettyPrinted)
+            } catch let error {
+                print(error.localizedDescription)
+            }
+
+            URLSession.shared.dataTask(with: request) { data, response, error in
+                if let data = data {
+                    do {
+                        if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+                            // Handle the JSON response as needed
+                            print(json)
+                        }
+                    } catch let error {
+                        print(error.localizedDescription)
+                    }
+                }
+            }.resume()
+        }
+
+        @Published var selectedCategoryId: String? // Add a property to store the selected category ID
+
+        func listCategories(userId: String) {
+            let url = URL(string: "https://andesaves-backend.onrender.com/categories/list/\(userId)")!
+            var request = URLRequest(url: url)
+            request.httpMethod = "GET"
+
+            URLSession.shared.dataTask(with: request) { data, response, error in
+                if let data = data {
+                    do {
+                        if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [[String: Any]] {
+                            // Parse and handle the JSON response as needed
+                            let categories = json.map { dict in
+                                Category(
+                                    id: dict["_id"] as? String ?? "", // Assuming the category ID is named "_id"
+                                    name: dict["name"] as? String ?? "",
+                                    user: dict["user"] as? String ?? ""
+                                )
+                            }
+                            DispatchQueue.main.async {
+                                self.categories = categories
+                            }
+                            
+                            // Save the category ID of the first category (if available)
+                            if let firstCategoryId = categories.first?.id {
+                                UserDefaults.standard.set(firstCategoryId, forKey: "SelectedCategoryIdKey")
+                                self.selectedCategoryId = firstCategoryId // Update the selectedCategoryId property
+                            }
+                        }
+                    } catch let error {
+                        print(error.localizedDescription)
+                    }
+                }
+            }.resume()
+        }
+    
+    
+    func deleteCategory(categoryId: String) {
+           guard let userId = UserDefaults.standard.string(forKey: "UserIdKey") else {
+               print("User ID not found. Please ensure the user is logged in.")
+               return
+           }
+
+           let url = URL(string: "https://andesaves-backend.onrender.com/category/delete/\(categoryId)")!
+           var request = URLRequest(url: url)
+           request.httpMethod = "DELETE"
+
+           URLSession.shared.dataTask(with: request) { data, response, error in
+               if let data = data {
+                   do {
+                       if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+                           if let success = json["success"] as? Bool, success {
+                               print("Category deleted successfully")
+                               
+                               if self.selectedCategoryId == categoryId {
+                                   self.selectedCategoryId = nil
+                               }
+                           } else {
+                               print("Category deletion failed.")
+                           }
+                       }
+                   } catch let error {
+                       print(error.localizedDescription)
+                   }
+               }
+           }.resume()
+       }
+    }
 
 
 final class SummaryViewModel: ObservableObject {
@@ -135,48 +231,53 @@ final class RegisterViewModel: ObservableObject {
 final class LoginViewModel: ObservableObject {
 
     @Published var isLoggedIn = false
-    func login( email : String, password : String)
-    {
-        let url = URL(string: "https://andesaves-backend.onrender.com/auth/login")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        let parameters: [String: Any] = [
-            "email": email,
-            "password": password
-        ]
-        
-        do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: parameters, options: .prettyPrinted)
-        } catch let error {
-            print(error.localizedDescription)
-        }
-        
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let data = data {
-                do {
-                    print(data)
-                    if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-                        print(json)
-                        if let auth = json["auth"] as? Int{
-                            if auth == 1 {
-                                        self.isLoggedIn = true
-                                   }
-                            if auth == 0 {
-                                       print("El registro del usuario no fue exitoso.")
-                                       // Aquí puedes manejar el caso cuando el registro no fue exitoso
-                                   }
-                            }
-                        
-                    }
-                } catch let error {
-                    print(error.localizedDescription)
-                }
-            }
-        }.resume()
+    @Published var userId: String?
+
+       func login(email: String, password: String) {
+           let url = URL(string: "https://andesaves-backend.onrender.com/auth/login")!
+           var request = URLRequest(url: url)
+           request.httpMethod = "POST"
+           request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+
+           let parameters: [String: Any] = [
+               "email": email,
+               "password": password
+           ]
+
+           do {
+               request.httpBody = try JSONSerialization.data(withJSONObject: parameters, options: .prettyPrinted)
+           } catch let error {
+               print(error.localizedDescription)
+           }
+
+           URLSession.shared.dataTask(with: request) { data, response, error in
+               if let data = data {
+                   do {
+                       if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+                           print(json)
+                           if let auth = json["auth"] as? Int, auth == 1 {
+                               // Login was successful
+                               self.isLoggedIn = true
+                               
+                               // Save the user ID in UserDefaults
+                               if let userId = json["userId"] as? String {
+                                   UserDefaults.standard.set(userId, forKey: "UserIdKey")
+                                   self.userId = userId // Update the userId property
+                               }
+                           } else {
+                               print("El registro del usuario no fue exitoso.")
+                               // Handle login failure
+                           }
+                       }
+                   } catch let error {
+                       print(error.localizedDescription)
+                   }
+               }
+           }.resume()
+       }
     }
-}
+
+
 final class AccountsViewModel: ObservableObject {
     
     @Published var accounts: [Account] = [

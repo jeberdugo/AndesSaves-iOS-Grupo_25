@@ -35,3 +35,9 @@ struct WebSheetItem: Identifiable {
     let id = UUID()
     let urlString: String
 }
+
+struct Category {
+    var id: String
+    var name: String
+    var user: String
+}
