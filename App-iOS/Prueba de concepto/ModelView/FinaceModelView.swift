@@ -94,7 +94,89 @@ final class SummaryViewModel: ObservableObject {
     
 }
 
+final class RegisterViewModel: ObservableObject {
 
+        
+    func register(name: String, phoneNumber : String, password : String, email: String)
+    {
+        let url = URL(string: "https://andesaves-backend.onrender.com/auth/register")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let parameters: [String: Any] = [
+            "name": name,
+            "email": email,
+            "phoneNumber": phoneNumber,
+            "password": password
+        ]
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: parameters, options: .prettyPrinted)
+        } catch let error {
+            print(error.localizedDescription)
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let data = data {
+                do {
+                    print(data)
+                    if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+                        print(json)
+                    }
+                } catch let error {
+                    print(error.localizedDescription)
+                }
+            }
+        }.resume()
+    }
+}
+
+final class LoginViewModel: ObservableObject {
+
+    @Published var isLoggedIn = false
+    func login( email : String, password : String)
+    {
+        let url = URL(string: "https://andesaves-backend.onrender.com/auth/login")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let parameters: [String: Any] = [
+            "email": email,
+            "password": password
+        ]
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: parameters, options: .prettyPrinted)
+        } catch let error {
+            print(error.localizedDescription)
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let data = data {
+                do {
+                    print(data)
+                    if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+                        print(json)
+                        if let auth = json["auth"] as? Int{
+                            if auth == 1 {
+                                        self.isLoggedIn = true
+                                   }
+                            if auth == 0 {
+                                       print("El registro del usuario no fue exitoso.")
+                                       // Aquí puedes manejar el caso cuando el registro no fue exitoso
+                                   }
+                            }
+                        
+                    }
+                } catch let error {
+                    print(error.localizedDescription)
+                }
+            }
+        }.resume()
+    }
+}
 final class AccountsViewModel: ObservableObject {
     
     @Published var accounts: [Account] = [
