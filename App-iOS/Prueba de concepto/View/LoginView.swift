@@ -49,19 +49,14 @@ struct LoginView: View {
                 .padding()
                 
                 
-                NavigationLink(
-                    destination: ContentView(),
-                    isActive: $showNextView
-                ){
-                    EmptyView()
-                }
+                
                 
                 Button(action: {
-                    viewModel.login(email: self.email, password: self.password)
-                    
-                    if viewModel.isLoggedIn {
-                                            self.showNextView = true
-                                        }
+                    viewModel.login(email: self.email, password: self.password)  { success in
+                        if success {
+                            self.showNextView = true
+                        }
+                    }
                 }) {
                     Text("Login")
                         .foregroundColor(Color.white)
@@ -71,8 +66,16 @@ struct LoginView: View {
                         .cornerRadius(10)
                 }
                 .padding()
+                .alert(item: $viewModel.alertItem) { alertItem in
+                                Alert(title: Text("Error"), message: Text(alertItem.message), dismissButton: .default(Text("OK")))
+                            }
                 
-                
+                NavigationLink(
+                    destination: ContentView(),
+                    isActive: $showNextView
+                ){
+                    EmptyView()
+                }
                 NavigationLink(destination: RegisterView()) {
                     Text("Don't have an account? Click here")
                         .foregroundColor(Color.blue) // Set your desired text color

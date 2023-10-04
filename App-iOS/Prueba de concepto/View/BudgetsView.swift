@@ -9,7 +9,13 @@ import SwiftUI
 
 // Vista para "Budgets"
 struct BudgetsView: View {
-      @State private var isAddBudgetViewPresented = false
+    @State private var dataArray: [Budget] = [
+        Budget(name: "House", date: "2023-09-25", percentage: "60%"),
+        Budget(name: "Car", date: "2023-10-01", percentage: "80%"),
+        Budget(name: "Bike", date: "2023-10-02", percentage: "40%"),
+        Budget(name: "Boat", date: "2023-10-03", percentage: "70%")
+    ]
+    @State private var isAddBudgetViewPresented = false
       @StateObject private var functions = GlobalFunctions()
 
     var body: some View {
@@ -70,15 +76,14 @@ struct BudgetsView: View {
                 .fontWeight(.bold)
                 .padding(.top, 20)
                 .foregroundColor(functions.isDaytime ? Color.black : Color.white)
+            List {
+                ForEach(self.dataArray, id: \.self) { item in
+                    ItemRow(name: item.name, date: item.date, percentage: item.percentage)
+                        
+                }.onDelete(perform: delete)
+                .foregroundColor(functions.isDaytime ? Color.black : Color.white)            }
             
-            ItemRow(name: "House", date: "2023-09-25", percentage: "60%")
-                .foregroundColor(functions.isDaytime ? Color.black : Color.white)
             
-            Divider()
-                .foregroundColor(functions.isDaytime ? Color.black : Color.white)
-            
-            ItemRow(name: "Car", date: "2023-09-26", percentage: "80%")
-                .foregroundColor(functions.isDaytime ? Color.black : Color.white)
             
             // Section: Group
             Text("Group")
@@ -100,8 +105,10 @@ struct BudgetsView: View {
     }
         .background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
     }
-  }
-
+    func delete(at offsets: IndexSet) {
+        dataArray.remove(atOffsets: offsets)
+    }
+}
 
 
   struct ItemRow: View {
