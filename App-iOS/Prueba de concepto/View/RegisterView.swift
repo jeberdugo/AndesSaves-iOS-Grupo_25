@@ -8,7 +8,7 @@ struct RegisterView: View {
     @State private var password = ""
     @State private var passwordConfirmation = ""
     @StateObject private var functions = GlobalFunctions()
-
+    
     var body: some View {
         NavigationView {
             VStack{
@@ -88,26 +88,27 @@ struct RegisterView: View {
                             )
                         
                         
-                    SecureField("Confirm Password", text: $passwordConfirmation)
-                        .textFieldStyle(PlainTextFieldStyle())
-                        .padding(.horizontal, 10)
-                }
-                .padding()
-
-                Button(action: {
-                    viewModel.register(name: self.name,phoneNumber: self.phone, password: self.password, email: self.email)
-                }) {
-                    Text("Register")
-                        .foregroundColor(Color.white)
-                        .padding(.horizontal, 35.0)
-                        .padding(.vertical, 10.0)
-                        .background(Color(red: 21/255, green: 191/255, blue: 129/255))
-                        .cornerRadius(10)
-
-                }
-                .padding()
-                Spacer()
-            }.background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
+                        SecureField("Confirm Password", text: $passwordConfirmation)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .padding(.horizontal, 10)
+                    }
+                    .padding()
+                    
+                    Button(action: {
+                        viewModel.register(name: self.name,phoneNumber: self.phone, password: self.password, email: self.email)
+                    }) {
+                        Text("Register")
+                            .foregroundColor(Color.white)
+                            .padding(.horizontal, 35.0)
+                            .padding(.vertical, 10.0)
+                            .background(Color(red: 21/255, green: 191/255, blue: 129/255))
+                            .cornerRadius(10)
+                        
+                    }
+                    .padding()
+                    Spacer()
+                }.background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
+            }
         }
     }
 }
