@@ -56,6 +56,60 @@ final class HistoryViewModel: ObservableObject {
     func removeTransaction(_ indexSet: IndexSet) {
                transactions.remove(atOffsets: indexSet)
        }
+    
+    func createExpense(amount: Double, date: Date, category: String, description: String, user: String) {
+        let url = URL(string: "https://your-server-url.com/expenses/new")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let expenseData: [String: Any] = [
+            "amount": amount,
+            "date": date.timeIntervalSince1970,
+            "category": category,
+            "description": description,
+            "user": user
+        ]
+
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: expenseData, options: .prettyPrinted)
+        } catch let error {
+            print(error.localizedDescription)
+            return
+        }
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let data = data {
+                do {
+                    if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+                        print(json)
+                        // Handle the response from the server as needed
+                    }
+                } catch let error {
+                    print(error.localizedDescription)
+                }
+            }
+        }.resume()
+    }
+    
+    func listExpenses(for userId: String) {
+        let url = URL(string: "https://your-server-url.com/expenses/list/\(userId)")!
+
+        URLSession.shared.dataTask(with: url) { data, response, error in
+            if let data = data {
+                do {
+                    if let expenses = try JSONSerialization.jsonObject(with: data, options: []) as? [[String: Any]] {
+                        print(expenses)
+                        // Handle the list of expenses as needed
+                    }
+                } catch let error {
+                    print(error.localizedDescription)
+                }
+            }
+        }.resume()
+    }
+    
+    
 }
 
 
@@ -90,6 +144,7 @@ final class TagsViewModel: ObservableObject {
             var request = URLRequest(url: url)
             request.httpMethod = "POST"
             request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+           
 
             let parameters: [String: Any] = [
                 "name": name,
