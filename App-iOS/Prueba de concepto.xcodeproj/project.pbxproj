@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		04A81D622AC3F7F3003DFE73 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04A81D612AC3F7F3003DFE73 /* LoginView.swift */; };
+		04A81D642AC3F82C003DFE73 /* RegisterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04A81D632AC3F82C003DFE73 /* RegisterView.swift */; };
 		9EEF41B52AAA924000D48DA7 /* Prueba_de_conceptoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EEF41B42AAA924000D48DA7 /* Prueba_de_conceptoApp.swift */; };
 		9EEF41B72AAA924000D48DA7 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EEF41B62AAA924000D48DA7 /* ContentView.swift */; };
 		9EEF41B92AAA924100D48DA7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9EEF41B82AAA924100D48DA7 /* Assets.xcassets */; };
@@ -43,6 +45,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		04A81D612AC3F7F3003DFE73 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		04A81D632AC3F82C003DFE73 /* RegisterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterView.swift; sourceTree = "<group>"; };
 		9EEF41B12AAA924000D48DA7 /* Prueba de concepto.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Prueba de concepto.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		9EEF41B42AAA924000D48DA7 /* Prueba_de_conceptoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Prueba_de_conceptoApp.swift; sourceTree = "<group>"; };
 		9EEF41B62AAA924000D48DA7 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -109,6 +113,8 @@
 				9EF596A62AC21279008D168E /* SummaryView.swift */,
 				9EF596A82AC212A4008D168E /* AccountsView.swift */,
 				9EF596AA2AC2134B008D168E /* SettingsView.swift */,
+				04A81D612AC3F7F3003DFE73 /* LoginView.swift */,
+				04A81D632AC3F82C003DFE73 /* RegisterView.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -243,6 +249,7 @@
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1430;
 				LastUpgradeCheck = 1430;
+				ORGANIZATIONNAME = "";
 				TargetAttributes = {
 					9EEF41B02AAA924000D48DA7 = {
 						CreatedOnToolsVersion = 14.3.1;
@@ -310,10 +317,12 @@
 			files = (
 				9EF596A92AC212A4008D168E /* AccountsView.swift in Sources */,
 				9EF596A32AC2119E008D168E /* BudgetsView.swift in Sources */,
+				04A81D642AC3F82C003DFE73 /* RegisterView.swift in Sources */,
 				9EF5969F2AC2068E008D168E /* FinaceModelView.swift in Sources */,
 				9EF596A12AC2113B008D168E /* MainMenu.swift in Sources */,
 				9EF596A52AC211C9008D168E /* TagsView.swift in Sources */,
 				9EEF41B72AAA924000D48DA7 /* ContentView.swift in Sources */,
+				04A81D622AC3F7F3003DFE73 /* LoginView.swift in Sources */,
 				9EF5969D2AC20176008D168E /* HistoryView.swift in Sources */,
 				9EF5969B2AC1FFA9008D168E /* FinanceModel.swift in Sources */,
 				9EEF41B52AAA924000D48DA7 /* Prueba_de_conceptoApp.swift in Sources */,
@@ -405,7 +414,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -459,7 +468,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
@@ -474,16 +483,20 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Prueba de concepto/Preview Content\"";
+				DEVELOPMENT_TEAM = F3DJWVTMGZ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Taking pictures of bills";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -502,16 +515,20 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Prueba de concepto/Preview Content\"";
+				DEVELOPMENT_TEAM = F3DJWVTMGZ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Taking pictures of bills";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

@@ -71,6 +71,7 @@ import WebKit
 
     struct AccountRow: View {
         let account: Account
+        @StateObject private var functions = GlobalFunctions()
         
         var body: some View {
             HStack {
@@ -80,6 +81,7 @@ import WebKit
                     .cornerRadius(20)
                 Text(account.title)
                     .font(.headline)
+
             }
         }
     }

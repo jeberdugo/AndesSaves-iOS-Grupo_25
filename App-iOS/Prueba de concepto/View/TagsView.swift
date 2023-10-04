@@ -95,43 +95,70 @@ import SwiftUI
                         Text(viewModel.isEditMode ? "Done" : "Edit")
                     }
                 }
-            }
+            }.edgesIgnoringSafeArea(/*@START_MENU_TOKEN@*/.all/*@END_MENU_TOKEN@*/)
             .sheet(isPresented: $viewModel.isAddTagDialogPresented) {
                 AddTagDialog(isPresented: $viewModel.isAddTagDialogPresented, tagName: $viewModel.newTagName, addTagAction: viewModel.addNewTag)
             }
         }
     }
 
-    struct AddTagDialog: View {
-        @Binding var isPresented: Bool
-        @Binding var tagName: String
-        var addTagAction: (String) -> Void // Cierre para agregar una nueva etiqueta
-
-        var body: some View {
+struct AddTagDialog: View {
+    @Binding var isPresented: Bool
+    @Binding var tagName: String
+    @StateObject private var functions = GlobalFunctions()
+    
+    var addTagAction: (String) -> Void // Cierre para agregar una nueva etiqueta
+    
+    var body: some View {
+        VStack{
+        ZStack() {
+            Color(red: 21/255, green: 191/255, blue: 129/255).edgesIgnoringSafeArea(.all)
             VStack {
-                Text("Agregar Nueva Etiqueta")
+                Text("Add new tag")
                     .font(.title)
-                    .padding()
-
-                TextField("Nombre de la etiqueta", text: $tagName)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .padding()
-
-                HStack {
-                    Button("Cancelar") {
-                        isPresented = false
-                    }
-                    Spacer()
-                    Button("Guardar") {
-                        // Llama a la función para agregar la nueva etiqueta
-                        addTagAction(tagName)
-
-                        // Cierra el diálogo
-                        isPresented = false
-                    }
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+            }
+        }.frame(maxWidth: 400, maxHeight: 60)
+        VStack {
+            
+            TextField("Tag name", text: $tagName)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .padding()
+            
+            HStack {
+                Button(action: {
+                    isPresented = false
+                }) {
+                    Text("Cancel")
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color(hex:"EE446D"))
+                        .cornerRadius(10)
                 }
                 .padding()
+                Spacer()
+                Button(action: {
+                    // Llama a la función para agregar la nueva etiqueta
+                    addTagAction(tagName)
+                    // Cierra el diálogo
+                    isPresented = false
+                }) {
+                    Text("Save")
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color(hex:"12CD8A"))
+                        .cornerRadius(10)
+                }
+                .padding()
+                
             }
             .padding()
         }
+        .padding()
+        Spacer()
+        }.background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
     }
+}
