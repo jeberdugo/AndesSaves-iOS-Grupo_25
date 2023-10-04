@@ -10,7 +10,7 @@ import Foundation
 final class ContentViewModel: ObservableObject {
     @Published public var isAddingTransaction = false
     @Published public var transactionName = ""
-    @Published public var transactionAmount = ""
+    @Published public var transactionAmount  = ""
     @Published public var transactionSource = ""
     @Published public var selectedType: Int = 0 // 0 for Income, 1 for Expense
     @Published public var selectedExpenseCategory: Int = 0
@@ -135,8 +135,10 @@ final class RegisterViewModel: ObservableObject {
 final class LoginViewModel: ObservableObject {
 
     @Published var isLoggedIn = false
-    func login( email : String, password : String)
-    {
+    @Published var alertItem: AlertItem?
+    @Published var token = ""
+    
+    func login(email: String, password: String, completion: @escaping (Bool) -> Void) {
         let url = URL(string: "https://andesaves-backend.onrender.com/auth/login")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -156,19 +158,23 @@ final class LoginViewModel: ObservableObject {
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let data = data {
                 do {
-                    print(data)
                     if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-                        print(json)
                         if let auth = json["auth"] as? Int{
-                            if auth == 1 {
-                                        self.isLoggedIn = true
-                                   }
-                            if auth == 0 {
-                                       print("El registro del usuario no fue exitoso.")
-                                       // Aquí puedes manejar el caso cuando el registro no fue exitoso
-                                   }
+                            DispatchQueue.main.async {
+                                if auth == 1 {
+                                    if let token = json["token"] as? String{
+                                        self.token = token
+                                    }
+                                    self.isLoggedIn = true
+                                    completion(true)
+                                } else {
+                                    if let message = json["message"] as? String{
+                                        self.alertItem = AlertItem(message: message)
+                                    }
+                                    completion(false)
+                                }
                             }
-                        
+                        }
                     }
                 } catch let error {
                     print(error.localizedDescription)

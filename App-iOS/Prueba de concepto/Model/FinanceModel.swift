@@ -15,6 +15,11 @@ struct Transaction: Identifiable, Hashable {
     var date: Date
 }
 
+struct AlertItem: Identifiable, Hashable {
+    var id = UUID()
+    var message: String
+}
+
 struct MenuItem {
     let title: String
     let imageName: String
@@ -34,4 +39,10 @@ struct TagsItem {
 struct WebSheetItem: Identifiable {
     let id = UUID()
     let urlString: String
+}
+
+struct Budget:Hashable {
+    var name: String
+    var date: String
+    var percentage: String
 }
