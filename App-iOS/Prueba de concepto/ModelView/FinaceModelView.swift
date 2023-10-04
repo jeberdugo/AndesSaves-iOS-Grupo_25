@@ -8,13 +8,13 @@
 import Foundation
 
 final class ContentViewModel: ObservableObject {
-    @Published public var balance: Double = 1000.0
     @Published public var isAddingTransaction = false
     @Published public var transactionName = ""
     @Published public var transactionAmount  = ""
     @Published public var transactionSource = ""
     @Published public var selectedType: Int = 0 // 0 for Income, 1 for Expense
     @Published public var selectedExpenseCategory: Int = 0
+
 }
 
 
@@ -32,13 +32,18 @@ final class MainMenuViewModel: ObservableObject {
 
 final class HistoryViewModel: ObservableObject {
     @Published public var transactions: [Transaction] = [
-        Transaction(name: "Compra de comestibles", amount: -50.0, date: Date()),
-        Transaction(name: "Pago de factura del gas", amount: -80.0, date: Date()),
-        Transaction(name: "Retiro de cajero", amount: 200.0, date: Date()),
-        Transaction(name: "Compra de ropa", amount: -150.0, date: Date()),
-        Transaction(name: "Pago de factura del agua", amount: -100.0, date: Date()),
-        Transaction(name: "Trabajo ocasional", amount: 250.0, date: Date())
+        Transaction(name: "Compra de comestibles", amount: -100000, date: Date()),
+        Transaction(name: "Pago de factura del gas", amount: 80000, date: Date()),
+        Transaction(name: "Retiro de cajero", amount: -200000, date: Date()),
+        Transaction(name: "Compra de ropa", amount: -150000, date: Date()),
+        Transaction(name: "Pago de factura del agua", amount: -100000, date: Date()),
+        Transaction(name: "Trabajo ocasional", amount: 250000, date: Date())
     ]
+    
+    func calculateBalance() -> Double {
+        let totalAmount = transactions.reduce(0) { $0 + $1.amount }
+        return totalAmount
+    }
     
     // Función para formatear la fecha y hora
     func formatDate(_ date: Date) -> String {
@@ -55,6 +60,10 @@ final class HistoryViewModel: ObservableObject {
 
 
 final class BudgetsViewModel: ObservableObject {
+    
+    
+    
+    // Vista de Add Budgets
     
 }
 
@@ -85,7 +94,95 @@ final class SummaryViewModel: ObservableObject {
     
 }
 
+final class RegisterViewModel: ObservableObject {
 
+        
+    func register(name: String, phoneNumber : String, password : String, email: String)
+    {
+        let url = URL(string: "https://andesaves-backend.onrender.com/auth/register")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let parameters: [String: Any] = [
+            "name": name,
+            "email": email,
+            "phoneNumber": phoneNumber,
+            "password": password
+        ]
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: parameters, options: .prettyPrinted)
+        } catch let error {
+            print(error.localizedDescription)
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let data = data {
+                do {
+                    print(data)
+                    if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+                        print(json)
+                    }
+                } catch let error {
+                    print(error.localizedDescription)
+                }
+            }
+        }.resume()
+    }
+}
+
+final class LoginViewModel: ObservableObject {
+
+    @Published var isLoggedIn = false
+    @Published var alertItem: AlertItem?
+    @Published var token = ""
+    
+    func login(email: String, password: String, completion: @escaping (Bool) -> Void) {
+        let url = URL(string: "https://andesaves-backend.onrender.com/auth/login")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let parameters: [String: Any] = [
+            "email": email,
+            "password": password
+        ]
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: parameters, options: .prettyPrinted)
+        } catch let error {
+            print(error.localizedDescription)
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let data = data {
+                do {
+                    if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+                        if let auth = json["auth"] as? Int{
+                            DispatchQueue.main.async {
+                                if auth == 1 {
+                                    if let token = json["token"] as? String{
+                                        self.token = token
+                                    }
+                                    self.isLoggedIn = true
+                                    completion(true)
+                                } else {
+                                    if let message = json["message"] as? String{
+                                        self.alertItem = AlertItem(message: message)
+                                    }
+                                    completion(false)
+                                }
+                            }
+                        }
+                    }
+                } catch let error {
+                    print(error.localizedDescription)
+                }
+            }
+        }.resume()
+    }
+}
 final class AccountsViewModel: ObservableObject {
     
     @Published var accounts: [Account] = [

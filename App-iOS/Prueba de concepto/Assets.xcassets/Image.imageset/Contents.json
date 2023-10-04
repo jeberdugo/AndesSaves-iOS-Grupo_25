@@ -1,11 +1,11 @@
 {
   "images" : [
     {
+      "filename" : "New Project.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
-      "filename" : "DaviPlata@2x.png",
       "idiom" : "universal",
       "scale" : "2x"
     },

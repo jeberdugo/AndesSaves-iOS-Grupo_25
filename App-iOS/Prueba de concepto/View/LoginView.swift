@@ -1,12 +1,16 @@
-
 import SwiftUI
 
 struct LoginView: View {
     @State private var email = ""
     @State private var password = ""
+    @ObservedObject var viewModel = LoginViewModel()
+    @State private var selection: Bool? = false
+    @State private var showNextView = false
+    @StateObject private var functions = GlobalFunctions()
 
     var body: some View {
         NavigationView {
+            VStack{
             VStack {
                 Image("Logo")
                     .resizable()
@@ -44,26 +48,43 @@ struct LoginView: View {
                 }
                 .padding()
                 
+                
+                
+                
+                Button(action: {
+                    viewModel.login(email: self.email, password: self.password)  { success in
+                        if success {
+                            self.showNextView = true
+                        }
+                    }
+                }) {
+                    Text("Login")
+                        .foregroundColor(Color.white)
+                        .padding(.horizontal, 35.0)
+                        .padding(.vertical, 10.0)
+                        .background(Color(hex:"12CD8A"))
+                        .cornerRadius(10)
+                }
+                .padding()
+                .alert(item: $viewModel.alertItem) { alertItem in
+                                Alert(title: Text("Error"), message: Text(alertItem.message), dismissButton: .default(Text("OK")))
+                            }
+                
                 NavigationLink(
                     destination: ContentView(),
-                    label: {
-                        Text("Login")
-                            .foregroundColor(Color.white)
-                            .padding(.horizontal, 35.0)
-                            .padding(.vertical, 10.0)
-                            .background(Color(hex:"12CD8A"))
-                            .cornerRadius(10)
-                    }
-                )
-                .padding()
+                    isActive: $showNextView
+                ){
+                    EmptyView()
+                }
                 NavigationLink(destination: RegisterView()) {
                     Text("Don't have an account? Click here")
                         .foregroundColor(Color.blue) // Set your desired text color
                         .underline() // Add an underline to the text
                 }
             }
-        .padding()
+            .padding()
             Spacer()
+            }.background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
         }.navigationBarBackButtonHidden(true)
     }
 }
