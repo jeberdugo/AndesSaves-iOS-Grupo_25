@@ -6,6 +6,8 @@
 //
 
 import Foundation
+import Combine
+import SwiftUI
 
 final class ContentViewModel: ObservableObject {
     @Published public var isAddingTransaction = false
@@ -14,6 +16,7 @@ final class ContentViewModel: ObservableObject {
     @Published public var transactionSource = ""
     @Published public var selectedType: Int = 0 // 0 for Income, 1 for Expense
     @Published public var selectedExpenseCategory: Int = 0
+    @Published public var balance: Double = 0
 
 }
 
@@ -60,11 +63,47 @@ final class HistoryViewModel: ObservableObject {
 
 
 final class BudgetsViewModel: ObservableObject {
+
     
     
-    
-    // Vista de Add Budgets
-    
+    struct Budget: Codable {
+        let name: String
+        let total: Int
+        let user: String
+        let date: Date
+        let type: Int
+    }
+
+    func createBudget(name: String, total: Int, date: Date, type: Int) {
+        let budget = Budget(name: name, total: total, user: Auth.shared.getUser()!, date: date, type: type)
+        guard let url = URL(string: "https://andesaves-backend.onrender.com/budgets/new") else { return }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        print("token" + Auth.shared.getAccessToken()!)
+        let token = Auth.shared.getAccessToken()
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        do {
+            let jsonData = try JSONEncoder().encode(budget)
+            request.httpBody = jsonData
+        } catch {
+            print("Error encoding budget data")
+            return
+        }
+
+        URLSession.shared.dataTask(with: request) { (data, response, error) in
+            if let error = error {
+                print("Error making POST request: \(error)")
+                return
+            }
+            if let response = response as? HTTPURLResponse {
+                print("Response status code: \(response.statusCode)")
+            }
+        }.resume()
+    }
+
 }
 
 
@@ -137,6 +176,7 @@ final class LoginViewModel: ObservableObject {
     @Published var isLoggedIn = false
     @Published var alertItem: AlertItem?
     @Published var token = ""
+    @Published var user = ""
     
     func login(email: String, password: String, completion: @escaping (Bool) -> Void) {
         let url = URL(string: "https://andesaves-backend.onrender.com/auth/login")!
@@ -162,8 +202,16 @@ final class LoginViewModel: ObservableObject {
                         if let auth = json["auth"] as? Int{
                             DispatchQueue.main.async {
                                 if auth == 1 {
-                                    if let token = json["token"] as? String{
-                                        self.token = token
+                                    if let token2 = json["token"] as? String{
+                                        self.token = token2
+                                        if let user2 = json["user"] as? String{
+                                            self.user = user2
+                                            print(user2)
+                                            Auth.shared.setCredentials(
+                                                           accessToken: token2, user: user2
+                                                       )
+                                            print(Auth.shared.getCredentials())
+                                        }
                                     }
                                     self.isLoggedIn = true
                                     completion(true)

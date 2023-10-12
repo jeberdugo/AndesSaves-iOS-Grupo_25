@@ -148,15 +148,22 @@ struct BudgetsView: View {
 
   struct AddBudgetView: View {
       @State private var budgetName = ""
-      @State private var budgetAmount = ""
+      @State private var budgetAmount = 0
+      @ObservedObject var viewModel = BudgetsViewModel()
       @State private var budgetDate = Date()
       @State private var selectedType = 0 // 0 for Individual, 1 for Group
+
       @State private var memberName = ""
       @State private var groupMembers: [String] = []
       @State private var contributions: [Double] = []
       @StateObject private var functions = GlobalFunctions()
       
-
+      private static let formatter: NumberFormatter = {
+              let formatter = NumberFormatter()
+              formatter.numberStyle = .decimal
+              return formatter
+          }()
+      
       var body: some View {
           ZStack() {
               Color(red: 21/255, green: 191/255, blue: 129/255).edgesIgnoringSafeArea(.all)
@@ -186,7 +193,7 @@ struct BudgetsView: View {
                   .offset(x: 20)
                   .foregroundColor(functions.isDaytime ? Color.black : Color.white)
               
-              TextField("Enter amount", text: $budgetAmount)
+              TextField("Enter amount", value: $budgetAmount, formatter: Self.formatter).keyboardType(.numberPad)
                   .textFieldStyle(RoundedBorderTextFieldStyle())
                   .padding(.horizontal)
               
@@ -235,7 +242,7 @@ struct BudgetsView: View {
               }
               
               Button(action: {
-                  // Add budget entry logic here
+                  viewModel.createBudget(name: budgetName, total: budgetAmount, date: budgetDate, type: selectedType)
               }) {
                   Text("Add")
                       .foregroundColor(.white)
@@ -255,6 +262,7 @@ struct BudgetsView: View {
           AddBudgetView()
   }
   }
+
 
 
 struct BudgetItemDetailView: View {

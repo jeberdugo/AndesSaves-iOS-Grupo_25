@@ -24,6 +24,7 @@ struct ContentView: View {
     @StateObject private var viewModel = ContentViewModel()
     @StateObject private var functions = GlobalFunctions()
     @StateObject private var History = HistoryViewModel()
+    let expenseCategories = ["Food", "Transport", "House", "Others"]
     
     var body: some View {
         NavigationView {

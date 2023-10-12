@@ -10,9 +10,11 @@ import SwiftUI
 @main
 struct Prueba_de_conceptoApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @StateObject var loginViewModel = LoginViewModel()
     var body: some Scene {
         WindowGroup {
-            LoginView()
+            LoginView().environmentObject(loginViewModel)
+            
         }
     }
 }
