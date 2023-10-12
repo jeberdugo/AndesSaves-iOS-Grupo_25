@@ -58,7 +58,7 @@ final class HistoryViewModel: ObservableObject {
        }
     
     func createExpense(amount: Double, date: Date, category: String, description: String, user: String) {
-        let url = URL(string: "https://your-server-url.com/expenses/new")!
+        let url = URL(string: "https://andesaves-backend.onrender.com/expenses/new")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -93,7 +93,7 @@ final class HistoryViewModel: ObservableObject {
     }
     
     func listExpenses(for userId: String) {
-        let url = URL(string: "https://your-server-url.com/expenses/list/\(userId)")!
+        let url = URL(string: "https://andesaves-backend.onrender.com/expenses/list/\(userId)")!
 
         URLSession.shared.dataTask(with: url) { data, response, error in
             if let data = data {
@@ -109,6 +109,58 @@ final class HistoryViewModel: ObservableObject {
         }.resume()
     }
     
+    
+    func createIncome(amount: Double, date: Date, source: String, user: String) {
+        let url = URL(string: "https://andesaves-backend.onrender.com/incomes/new")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let incomeData: [String: Any] = [
+            "amount": amount,
+            "date": date.timeIntervalSince1970,
+            "source": source,
+            "user": user
+        ]
+
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: incomeData, options: .prettyPrinted)
+        } catch let error {
+            print(error.localizedDescription)
+            return
+        }
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let data = data {
+                do {
+                    if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+                        print(json)
+                        // Handle the response from the server as needed
+                    }
+                } catch let error {
+                    print(error.localizedDescription)
+                }
+            }
+        }.resume()
+    }
+    
+    
+    func listIncomes(for userId: String) {
+        let url = URL(string: "https://andesaves-backend.onrender.com/incomes/list/\(userId)")!
+
+        URLSession.shared.dataTask(with: url) { data, response, error in
+            if let data = data {
+                do {
+                    if let incomes = try JSONSerialization.jsonObject(with: data, options: []) as? [[String: Any]] {
+                        print(incomes)
+                        // Handle the list of incomes as needed
+                    }
+                } catch let error {
+                    print(error.localizedDescription)
+                }
+            }
+        }.resume()
+    }
     
 }
 
@@ -130,6 +182,12 @@ final class TagsViewModel: ObservableObject {
     @Published var isEditMode = false
     @Published var isAddTagDialogPresented = false
     @Published var newTagName = ""
+    let loginViewModel: LoginViewModel = LoginViewModel()
+    var token: String = ""
+    
+    init() {
+            self.token = loginViewModel.token
+        }
 
     // Función para agregar una nueva etiqueta
     func addNewTag(_ tagName: String) {
@@ -144,6 +202,7 @@ final class TagsViewModel: ObservableObject {
             var request = URLRequest(url: url)
             request.httpMethod = "POST"
             request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.setValue("Bearer " + loginViewModel.token, forHTTPHeaderField: "Authorization")
            
 
             let parameters: [String: Any] = [
@@ -177,6 +236,7 @@ final class TagsViewModel: ObservableObject {
             let url = URL(string: "https://andesaves-backend.onrender.com/categories/list/\(userId)")!
             var request = URLRequest(url: url)
             request.httpMethod = "GET"
+            request.setValue("Bearer " + loginViewModel.token, forHTTPHeaderField: "Authorization")
 
             URLSession.shared.dataTask(with: request) { data, response, error in
                 if let data = data {
@@ -287,49 +347,53 @@ final class LoginViewModel: ObservableObject {
 
     @Published var isLoggedIn = false
     @Published var userId: String?
+    @Published var alertItem: AlertItem?
+    @Published var token = ""
 
-       func login(email: String, password: String) {
-           let url = URL(string: "https://andesaves-backend.onrender.com/auth/login")!
-           var request = URLRequest(url: url)
-           request.httpMethod = "POST"
-           request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-
-           let parameters: [String: Any] = [
-               "email": email,
-               "password": password
-           ]
-
-           do {
-               request.httpBody = try JSONSerialization.data(withJSONObject: parameters, options: .prettyPrinted)
-           } catch let error {
-               print(error.localizedDescription)
-           }
-
-           URLSession.shared.dataTask(with: request) { data, response, error in
-               if let data = data {
-                   do {
-                       if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-                           print(json)
-                           if let auth = json["auth"] as? Int, auth == 1 {
-                               // Login was successful
-                               self.isLoggedIn = true
-                               
-                               // Save the user ID in UserDefaults
-                               if let userId = json["userId"] as? String {
-                                   UserDefaults.standard.set(userId, forKey: "UserIdKey")
-                                   self.userId = userId // Update the userId property
-                               }
-                           } else {
-                               print("El registro del usuario no fue exitoso.")
-                               // Handle login failure
-                           }
-                       }
-                   } catch let error {
-                       print(error.localizedDescription)
-                   }
-               }
-           }.resume()
-       }
+    func login(email: String, password: String, completion: @escaping (Bool) -> Void) {
+            let url = URL(string: "https://andesaves-backend.onrender.com/auth/login")!
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+            
+            let parameters: [String: Any] = [
+                "email": email,
+                "password": password
+            ]
+            
+            do {
+                request.httpBody = try JSONSerialization.data(withJSONObject: parameters, options: .prettyPrinted)
+            } catch let error {
+                print(error.localizedDescription)
+            }
+            
+            URLSession.shared.dataTask(with: request) { data, response, error in
+                if let data = data {
+                    do {
+                        if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+                            if let auth = json["auth"] as? Int{
+                                DispatchQueue.main.async {
+                                    if auth == 1 {
+                                        if let token = json["token"] as? String{
+                                            self.token = token
+                                        }
+                                        self.isLoggedIn = true
+                                        completion(true)
+                                    } else {
+                                        if let message = json["message"] as? String{
+                                            self.alertItem = AlertItem(message: message)
+                                        }
+                                        completion(false)
+                                    }
+                                }
+                            }
+                        }
+                    } catch let error {
+                        print(error.localizedDescription)
+                    }
+                }
+            }.resume()
+        }
     }
 
 

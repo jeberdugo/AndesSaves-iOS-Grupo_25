@@ -147,7 +147,8 @@ import SwiftUI
                         viewModel.createCategory(name: "Transportation", user: [loginViewModel.userId] as? String ?? "")
                     }
                     
-                    
+                    viewModel.listCategories(userId:
+                        [loginViewModel.userId] as? String ?? "")
                             }
                 
                 Spacer(minLength: 30)

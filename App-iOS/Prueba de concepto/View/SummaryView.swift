@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Charts
 
 // Vista para "Summary"
     struct SummaryView: View {

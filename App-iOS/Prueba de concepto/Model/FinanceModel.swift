@@ -41,3 +41,8 @@ struct Category {
     var name: String
     var user: String
 }
+
+struct AlertItem: Identifiable, Hashable {
+    var id = UUID()
+    var message: String
+}
