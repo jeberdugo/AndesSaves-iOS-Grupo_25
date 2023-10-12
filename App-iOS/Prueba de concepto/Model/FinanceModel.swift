@@ -46,3 +46,14 @@ struct Budget:Hashable {
     var date: String
     var percentage: String
 }
+
+struct Category: Codable {
+    var name: String
+    var user: String
+}
+
+struct CategoryWithId: Codable {
+    var id: String
+    var name: String
+    var user: String
+}
