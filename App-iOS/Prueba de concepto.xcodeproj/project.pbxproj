@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		04A81D622AC3F7F3003DFE73 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04A81D612AC3F7F3003DFE73 /* LoginView.swift */; };
 		04A81D642AC3F82C003DFE73 /* RegisterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04A81D632AC3F82C003DFE73 /* RegisterView.swift */; };
+		04A81D662AD84881003DFE73 /* Auth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04A81D652AD84881003DFE73 /* Auth.swift */; };
+		04A81D6A2AD84B6C003DFE73 /* SwiftKeychainWrapper in Frameworks */ = {isa = PBXBuildFile; productRef = 04A81D692AD84B6C003DFE73 /* SwiftKeychainWrapper */; settings = {ATTRIBUTES = (Required, ); }; };
 		9EEF41B52AAA924000D48DA7 /* Prueba_de_conceptoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EEF41B42AAA924000D48DA7 /* Prueba_de_conceptoApp.swift */; };
 		9EEF41B72AAA924000D48DA7 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EEF41B62AAA924000D48DA7 /* ContentView.swift */; };
 		9EEF41B92AAA924100D48DA7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9EEF41B82AAA924100D48DA7 /* Assets.xcassets */; };
@@ -47,6 +49,7 @@
 /* Begin PBXFileReference section */
 		04A81D612AC3F7F3003DFE73 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		04A81D632AC3F82C003DFE73 /* RegisterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegisterView.swift; sourceTree = "<group>"; };
+		04A81D652AD84881003DFE73 /* Auth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Auth.swift; sourceTree = "<group>"; };
 		9EEF41B12AAA924000D48DA7 /* Prueba de concepto.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Prueba de concepto.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		9EEF41B42AAA924000D48DA7 /* Prueba_de_conceptoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Prueba_de_conceptoApp.swift; sourceTree = "<group>"; };
 		9EEF41B62AAA924000D48DA7 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -73,6 +76,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				04A81D6A2AD84B6C003DFE73 /* SwiftKeychainWrapper in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -93,6 +97,13 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		04A81D672AD84AB5003DFE73 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		9E46FD002AC1FE6A00B3FF84 /* Model */ = {
 			isa = PBXGroup;
 			children = (
@@ -126,6 +137,7 @@
 				9EEF41C42AAA924100D48DA7 /* Prueba de conceptoTests */,
 				9EEF41CE2AAA924100D48DA7 /* Prueba de conceptoUITests */,
 				9EEF41B22AAA924000D48DA7 /* Products */,
+				04A81D672AD84AB5003DFE73 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -180,6 +192,7 @@
 			isa = PBXGroup;
 			children = (
 				9EF5969E2AC2068E008D168E /* FinaceModelView.swift */,
+				04A81D652AD84881003DFE73 /* Auth.swift */,
 			);
 			path = ModelView;
 			sourceTree = "<group>";
@@ -200,6 +213,9 @@
 			dependencies = (
 			);
 			name = "Prueba de concepto";
+			packageProductDependencies = (
+				04A81D692AD84B6C003DFE73 /* SwiftKeychainWrapper */,
+			);
 			productName = "Prueba de concepto";
 			productReference = 9EEF41B12AAA924000D48DA7 /* Prueba de concepto.app */;
 			productType = "com.apple.product-type.application";
@@ -273,6 +289,9 @@
 				Base,
 			);
 			mainGroup = 9EEF41A82AAA924000D48DA7;
+			packageReferences = (
+				04A81D682AD84B6C003DFE73 /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */,
+			);
 			productRefGroup = 9EEF41B22AAA924000D48DA7 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -326,6 +345,7 @@
 				9EF5969D2AC20176008D168E /* HistoryView.swift in Sources */,
 				9EF5969B2AC1FFA9008D168E /* FinanceModel.swift in Sources */,
 				9EEF41B52AAA924000D48DA7 /* Prueba_de_conceptoApp.swift in Sources */,
+				04A81D662AD84881003DFE73 /* Auth.swift in Sources */,
 				9EF596A72AC21279008D168E /* SummaryView.swift in Sources */,
 				9EF596AB2AC2134B008D168E /* SettingsView.swift in Sources */,
 			);
@@ -654,6 +674,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		04A81D682AD84B6C003DFE73 /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/jrendel/SwiftKeychainWrapper";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		04A81D692AD84B6C003DFE73 /* SwiftKeychainWrapper */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 04A81D682AD84B6C003DFE73 /* XCRemoteSwiftPackageReference "SwiftKeychainWrapper" */;
+			productName = SwiftKeychainWrapper;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 9EEF41A92AAA924000D48DA7 /* Project object */;
 }

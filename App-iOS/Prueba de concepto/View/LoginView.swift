@@ -3,6 +3,7 @@ import SwiftUI
 struct LoginView: View {
     @State private var email = ""
     @State private var password = ""
+    @State public var token = ""
     @ObservedObject var viewModel = LoginViewModel()
     @State private var selection: Bool? = false
     @State private var showNextView = false
