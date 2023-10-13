@@ -105,7 +105,7 @@ final class BudgetsViewModel: ObservableObject {
     }
     
     func fetchBudgets(completion: @escaping ([Budget]?) -> Void) {
-            guard let url = URL(string: "https://andesaves-backend.onrender.com/budgets/list/\(Auth.shared.getUser())") else {
+            guard let url = URL(string: "https://andesaves-backend.onrender.com/budgets/list/\(Auth.shared.getUser()!)") else {
                 completion(nil)
                 return
             }
@@ -113,7 +113,7 @@ final class BudgetsViewModel: ObservableObject {
             var request = URLRequest(url: url)
             request.httpMethod = "GET"
             request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-            let token = Auth.shared.getAccessToken()
+            let token = Auth.shared.getAccessToken()!
             request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
             URLSession.shared.dataTask(with: request) { (data, response, error) in
