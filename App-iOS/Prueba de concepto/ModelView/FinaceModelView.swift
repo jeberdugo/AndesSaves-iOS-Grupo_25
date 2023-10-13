@@ -34,19 +34,7 @@ final class MainMenuViewModel: ObservableObject {
 
 
 final class HistoryViewModel: ObservableObject {
-    @Published public var transactions: [Transaction] = [
-        Transaction(name: "Compra de comestibles", amount: -100000, date: Date()),
-        Transaction(name: "Pago de factura del gas", amount: 80000, date: Date()),
-        Transaction(name: "Retiro de cajero", amount: -200000, date: Date()),
-        Transaction(name: "Compra de ropa", amount: -150000, date: Date()),
-        Transaction(name: "Pago de factura del agua", amount: -100000, date: Date()),
-        Transaction(name: "Trabajo ocasional", amount: 250000, date: Date())
-    ]
-    
-    func calculateBalance() -> Double {
-        let totalAmount = transactions.reduce(0) { $0 + $1.amount }
-        return totalAmount
-    }
+    @Published public var transactions: [Transaction] = [ ]
     
     // Función para formatear la fecha y hora
     func formatDate(_ date: Date) -> String {
@@ -55,10 +43,41 @@ final class HistoryViewModel: ObservableObject {
         return dateFormatter.string(from: date)
     }
     
-    // Funcion para eliminar un item de History
-    func removeTransaction(_ indexSet: IndexSet) {
-               transactions.remove(atOffsets: indexSet)
-       }
+    func getData() {
+            guard let url = URL(string: "https://andesaves-backend.onrender.com/users/transactions") else { return }
+            
+            var request = URLRequest(url: url)
+            request.httpMethod = "GET"
+        let token = Auth.shared.getAccessToken()!
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            
+        URLSession.shared.dataTask(with: request) { (data, response, error) in
+            if let _ = error {
+                print("Error")
+            }
+            
+            if let data = data,
+               let httpResponse = response as? HTTPURLResponse,
+               httpResponse.statusCode == 200 {
+                let decoder = JSONDecoder()
+                let dateFormatter = DateFormatter()
+                dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+                dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+                dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+                decoder.dateDecodingStrategy = .formatted(dateFormatter)
+                
+                do {
+                    let transactionsDataModel = try decoder.decode(TransactionsResponse.self, from: data)
+                    self.transactions = transactionsDataModel.transactions
+                    print("Transactions \(transactionsDataModel)")
+                } catch {
+                    print("Decoding error: \(error)")
+                }
+            }
+        }.resume()
+
+        }
+
 }
 
 
@@ -81,7 +100,6 @@ final class BudgetsViewModel: ObservableObject {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        print("token" + Auth.shared.getAccessToken()!)
         let token = Auth.shared.getAccessToken()
             request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
@@ -204,13 +222,14 @@ final class LoginViewModel: ObservableObject {
                                 if auth == 1 {
                                     if let token2 = json["token"] as? String{
                                         self.token = token2
+                                        print(token2)
                                         if let user2 = json["user"] as? String{
                                             self.user = user2
                                             print(user2)
                                             Auth.shared.setCredentials(
                                                            accessToken: token2, user: user2
                                                        )
-                                            print(Auth.shared.getCredentials())
+  
                                         }
                                     }
                                     self.isLoggedIn = true

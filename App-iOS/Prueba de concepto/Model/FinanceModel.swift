@@ -8,7 +8,7 @@
 import Foundation
 
 
-struct Transaction: Identifiable, Hashable {
+struct TransactionA: Identifiable, Hashable {
     var id = UUID()
     var name: String
     var amount: Double
@@ -45,4 +45,50 @@ struct Budget:Hashable {
     var name: String
     var date: String
     var percentage: String
+}
+
+struct Transaction: Decodable, Identifiable {
+    var id : String?
+    
+
+    
+    struct Income: Decodable, Identifiable {
+        var id : String?
+        
+        let _id: String
+        let amount: Int
+        let date: Date
+        let source: String
+        let user: String
+
+    }
+    
+    struct Expense: Decodable , Identifiable{
+        var id : String?
+        let _id: String
+        let amount: Int
+        let date: Date
+        let category: String
+        let description: String
+        let user: String
+        let isRecurring: Bool
+        let recurrenceType: String?
+        let recurrenceEndDate: String?
+    }
+
+    let _id: String
+    let income: Income?
+    let expense: Expense?
+    let user: String
+}
+
+struct TransactionsResponse: Decodable {
+    let transactions: [Transaction]
+    enum CodingKeys: String, CodingKey {
+            case transactions
+        }
+    init(from decoder: Decoder) throws {
+           let container = try decoder.container(keyedBy: CodingKeys.self)
+           self.transactions = try container.decode([Transaction].self, forKey: .transactions)
+       }
 }
