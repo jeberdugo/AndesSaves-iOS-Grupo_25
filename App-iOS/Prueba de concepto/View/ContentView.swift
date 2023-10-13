@@ -41,7 +41,7 @@ struct ContentView: View {
                             .fontWeight(.bold)
                             .foregroundColor(.white)
                        
-                        Text("$\(String(format: "%.2f", History.calculateBalance()))")
+                        Text("$\(String(format: "%.2f", 100))")
                             .font(.largeTitle)
                             .foregroundColor(.white)
                         
@@ -151,7 +151,7 @@ struct AddTransactionView: View {
     @EnvironmentObject var functions: GlobalFunctions
     @EnvironmentObject var historyViewModel: HistoryViewModel
     @State private var showImagePicker = false
-    @State private var image: Image?
+    @State private var image: Image? 
     @State private var isShowingImage = false
     let expenseCategories = ["Food", "Transport", "House", "Others"]
     
@@ -313,7 +313,7 @@ func checkAndSendNotificationIfNeeded() {
     print("Checking balance and sending notification")
     let History = HistoryViewModel()
     @State var showNegativeBalanceAlert = false
-    if History.calculateBalance() < 0 {
+    if 5 < 0 {
         // Create a notification content
         
         let content = UNMutableNotificationContent()
