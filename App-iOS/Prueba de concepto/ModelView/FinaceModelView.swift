@@ -43,6 +43,7 @@ final class HistoryViewModel: ObservableObject {
         return dateFormatter.string(from: date)
     }
     
+    
     func getData() {
             guard let url = URL(string: "https://andesaves-backend.onrender.com/users/transactions") else { return }
             
@@ -161,25 +162,139 @@ final class BudgetsViewModel: ObservableObject {
 
 
 final class TagsViewModel: ObservableObject {
-    @Published var tagsItems: [TagsItem] = [
-        TagsItem(title: "Food", imageName: "Food"),
-        TagsItem(title: "Transportation", imageName: "Transportation"),
-        TagsItem(title: "Housing", imageName: "Housing"),
-        TagsItem(title: "Health", imageName: "Health"),
-        TagsItem(title: "Entertainment", imageName: "Entertainment"),
-        TagsItem(title: "Add", imageName: "Add")
-    ]
+        @Published var tagsItems: [TagsItem] = [
+            TagsItem(title: "Add", imageName: "Add")
+        ]
 
-    @Published var isEditMode = false
-    @Published var isAddTagDialogPresented = false
-    @Published var newTagName = ""
+        @Published var isEditMode = false
+        @Published var isAddTagDialogPresented = false
+        @Published var newTagName = ""
+        let loginViewModel: LoginViewModel = LoginViewModel()
 
-    // Función para agregar una nueva etiqueta
-    func addNewTag(_ tagName: String) {
-        let newTag = TagsItem(title: tagName, imageName: "DefaultImage") // Ajusta la imagen según tus necesidades.
-        tagsItems.insert(newTag, at: tagsItems.count - 1)
-    }
-}
+        // Función para agregar una nueva etiqueta
+        func addNewTag(_ tagName: String) {
+            let newTag = TagsItem(title: tagName, imageName: "DefaultImage") // Ajusta la imagen según tus necesidades.
+            tagsItems.insert(newTag, at: tagsItems.count - 1)
+        }
+        
+        @Published var categories = [Category]()
+        @Published var categoriesWithId = [CategoryWithId]()
+        @Published var selectedCategoryId: String?
+    
+    func createCategory(name: String) {
+                   let category = Category(name: name, user: Auth.shared.getUser()!)
+                   guard let url = URL(string: "https://andesaves-backend.onrender.com/categories/new") else { return }
+
+                   var request = URLRequest(url: url)
+                   request.httpMethod = "POST"
+                   request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+                   print("token" + Auth.shared.getAccessToken()!)
+                   let token = Auth.shared.getAccessToken()
+                       request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+                   do {
+                       let jsonData = try JSONEncoder().encode(category)
+                       request.httpBody = jsonData
+                   } catch {
+                       print("Error encoding budget data")
+                       return
+                   }
+
+                   URLSession.shared.dataTask(with: request) { (data, response, error) in
+                       if let error = error {
+                           print("Error making POST request: \(error)")
+                           return
+                       }
+                       if let response = response as? HTTPURLResponse {
+                           print("Response status code: \(response.statusCode)")
+                       }
+                   }.resume()
+               }
+    
+    
+    func listCategories() {
+            guard let url = URL(string: "https://andesaves-backend.onrender.com/categories/list/\(Auth.shared.getUser()!)") else { return }
+
+            var request = URLRequest(url: url)
+            request.httpMethod = "GET"
+            request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+            print("token" + Auth.shared.getAccessToken()!)
+            let token = Auth.shared.getAccessToken()
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+            URLSession.shared.dataTask(with: request) { data, response, error in
+                if let data = data {
+                    do {
+                        if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [[String: Any]] {
+                            // Parse and handle the JSON response as needed
+                            DispatchQueue.main.async {
+                                self.categoriesWithId = json.map { dict in
+                                    CategoryWithId(
+                                        id: dict["id"] as? String ?? "",
+                                        name: dict["name"] as? String ?? "",
+                                        user: dict["user"] as? String ?? ""
+                                    )
+                                }
+                                
+                                // Save the category ID of the first category (if available)
+                                if let firstCategoryId = self.categoriesWithId.first?.id {
+                                    UserDefaults.standard.set(firstCategoryId, forKey: "SelectedCategoryIdKey")
+                                    self.selectedCategoryId = firstCategoryId // Update the selectedCategoryId property
+                                }
+                            }
+                        }
+                    } catch let error {
+                        print(error.localizedDescription)
+                    }
+                }
+                if let error = error {
+                    print("Error making GET request: \(error)")
+                                   return
+                               }
+                               if let response = response as? HTTPURLResponse {
+                                   print("Response status code: \(response.statusCode)")
+                               }
+                           }.resume()
+                       }
+    
+    
+    func deleteCategory(categoryId: String) {
+                  let url = URL(string: "https://andesaves-backend.onrender.com/category/delete/\(categoryId)")!
+                  var request = URLRequest(url: url)
+                  request.httpMethod = "DELETE"
+                  request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+                  print("token" + Auth.shared.getAccessToken()!)
+                  let token = Auth.shared.getAccessToken()
+                  request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+                  URLSession.shared.dataTask(with: request) { data, response, error in
+                      if let data = data {
+                          do {
+                              if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+                                  if let success = json["success"] as? Bool, success {
+                                      print("Category deleted successfully")
+                                      
+                                      if self.selectedCategoryId == categoryId {
+                                          self.selectedCategoryId = nil
+                                      }
+                                  } else {
+                                      print("Category deletion failed.")
+                                  }
+                              }
+                          } catch let error {
+                              print(error.localizedDescription)
+                          }
+                      }
+                      if let error = error {
+                          print("Error making GET request: \(error)")
+                          return
+                      }
+                      if let response = response as? HTTPURLResponse {
+                          print("Response status code: \(response.statusCode)")
+                                           }
+                                       }.resume()
+                                   }
+            }
 
 
 final class SummaryViewModel: ObservableObject {

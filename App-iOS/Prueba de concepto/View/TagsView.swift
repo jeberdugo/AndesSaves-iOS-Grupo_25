@@ -1,4 +1,4 @@
-//
+///
 //  TagsView.swift
 //  Prueba de concepto
 //
@@ -11,8 +11,12 @@ import SwiftUI
     struct TagsView: View {
         @StateObject private var viewModel = TagsViewModel()
         @StateObject private var functions = GlobalFunctions()
+        @StateObject private var loginViewModel = LoginViewModel()
+        
+        
         
         var body: some View {
+            
             ZStack() {
                 Color(red: 21/255, green: 191/255, blue: 129/255).edgesIgnoringSafeArea(.all)
                 VStack {
@@ -30,8 +34,10 @@ import SwiftUI
                     GridItem(.flexible(), spacing: 10),
                     GridItem(.flexible(), spacing: 10),
                     GridItem(.flexible(), spacing: 10)
-                ], spacing: 50) {
-                    ForEach(viewModel.tagsItems.indices, id: \.self) { index in
+                ], spacing: 50)
+                {
+                    
+                    ForEach(viewModel.categoriesWithId.indices, id: \.self) { index in
                         ZStack {
                             Rectangle()
                                 .fill(Color(red: 242/255, green: 242/255, blue: 242/255))
@@ -45,20 +51,28 @@ import SwiftUI
 
                             VStack {
                                 Spacer(minLength: 8)
-                                Image(viewModel.tagsItems[index].imageName)
+                                Image(viewModel.categoriesWithId[index].name)
                                     .resizable()
                                     .frame(width: 45, height: 45)
+                                    .onAppear {
+                                        if let isImageFound = UIImage(named: viewModel.categoriesWithId[index].name)?.pngData()?.isEmpty {
+                                            if !isImageFound {
+                                                Image("DefaultImage")
+                                            }
+                                        }
+                                    }
 
-                                Text(viewModel.tagsItems[index].title)
+                                Text(viewModel.categoriesWithId[index].name)
                                     .foregroundColor(.gray)
                                     .padding(10)
                                     .font(.custom("San Francisco", size: 12))
                             }
                             
-                            if viewModel.tagsItems[index].title != "Add" {
+                            if viewModel.categoriesWithId[index].name != "Add" {
                                 if viewModel.isEditMode {
                                     Button(action: {
-                                        viewModel.tagsItems.remove(at: index)
+                                      viewModel.deleteCategory(categoryId: viewModel.categoriesWithId[index].id)
+                                       viewModel.listCategories()
                                     }) {
                                         Image(systemName: "minus.circle.fill")
                                             .foregroundColor(.red)
@@ -83,6 +97,62 @@ import SwiftUI
                         }
                     }
                 }
+                .onAppear {
+                    /*
+                     viewModel.listCategories()
+                             }
+                     
+                    let tagAdd = viewModel.categories.contains { category in
+                        return category.name == "Add"
+                    }
+                    
+                    let tagEntertainment = viewModel.categories.contains { category in
+                        return category.name == "Entertainment"
+                    }
+                    
+                    let tagFood = viewModel.categories.contains { category in
+                        return category.name == "Food"
+                    }
+                    
+                    let tagHealth = viewModel.categories.contains { category in
+                        return category.name == "Health"
+                    }
+                    
+                    let tagHousing = viewModel.categories.contains { category in
+                        return category.name == "Housing"
+                    }
+                    
+                    let tagTransportation = viewModel.categories.contains { category in
+                        return category.name == "Transportation"
+                    }
+                    
+                    if !tagAdd {
+                        viewModel.createCategory(name: "Add")
+                    }
+                    
+                    if !tagEntertainment {
+                        viewModel.createCategory(name: "Entertainment")
+                    }
+                    
+                    if !tagFood {
+                        viewModel.createCategory(name: "Food")
+                    }
+                    
+                    if !tagHealth {
+                        viewModel.createCategory(name: "Health")
+                    }
+                    
+                    if !tagHousing {
+                        viewModel.createCategory(name: "Housing")
+                    }
+                    
+                    if !tagTransportation {
+                        viewModel.createCategory(name: "Transportation")
+                    }
+                     */
+                    viewModel.listCategories()
+                            }
+                
                 Spacer(minLength: 30)
                 .padding()
             }
@@ -105,7 +175,9 @@ import SwiftUI
 struct AddTagDialog: View {
     @Binding var isPresented: Bool
     @Binding var tagName: String
+    @StateObject private var viewModel = TagsViewModel()
     @StateObject private var functions = GlobalFunctions()
+    @StateObject private var loginViewModel = LoginViewModel()
     
     var addTagAction: (String) -> Void // Cierre para agregar una nueva etiqueta
     
@@ -141,7 +213,8 @@ struct AddTagDialog: View {
                 Spacer()
                 Button(action: {
                     // Llama a la función para agregar la nueva etiqueta
-                    addTagAction(tagName)
+                    viewModel.createCategory(name: tagName)
+                    viewModel.listCategories()
                     // Cierra el diálogo
                     isPresented = false
                 }) {
