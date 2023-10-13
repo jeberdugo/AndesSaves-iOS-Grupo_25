@@ -92,3 +92,14 @@ struct TransactionsResponse: Decodable {
            self.transactions = try container.decode([Transaction].self, forKey: .transactions)
        }
 }
+
+struct Category: Codable {
+    var name: String
+    var user: String
+}
+
+struct CategoryWithId: Codable {
+    var id: String
+    var name: String
+    var user: String
+}
