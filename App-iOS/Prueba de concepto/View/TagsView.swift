@@ -98,9 +98,8 @@ import SwiftUI
                     }
                 }
                 .onAppear {
-                    /*
+                    
                      viewModel.listCategories()
-                             }
                      
                     let tagAdd = viewModel.categories.contains { category in
                         return category.name == "Add"
@@ -149,7 +148,6 @@ import SwiftUI
                     if !tagTransportation {
                         viewModel.createCategory(name: "Transportation")
                     }
-                     */
                     viewModel.listCategories()
                             }
                 
