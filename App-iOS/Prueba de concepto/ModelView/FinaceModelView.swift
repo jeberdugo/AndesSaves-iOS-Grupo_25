@@ -103,6 +103,41 @@ final class BudgetsViewModel: ObservableObject {
             }
         }.resume()
     }
+    
+    func fetchBudgets(completion: @escaping ([Budget]?) -> Void) {
+            guard let url = URL(string: "https://andesaves-backend.onrender.com/budgets/list/\(Auth.shared.getUser())") else {
+                completion(nil)
+                return
+            }
+
+            var request = URLRequest(url: url)
+            request.httpMethod = "GET"
+            request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+            let token = Auth.shared.getAccessToken()
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+            URLSession.shared.dataTask(with: request) { (data, response, error) in
+                if let error = error {
+                    print("Error making GET request: \(error)")
+                    completion(nil)
+                    return
+                }
+                if let response = response as? HTTPURLResponse {
+                    print("Response status code: \(response.statusCode)")
+                }
+                if let data = data {
+                    do {
+                        let budgets = try JSONDecoder().decode([Budget].self, from: data)
+                        completion(budgets)
+                    } catch {
+                        print("Error decoding budget data")
+                        completion(nil)
+                    }
+                } else {
+                    completion(nil)
+                }
+            }.resume()
+        }
 
 }
 

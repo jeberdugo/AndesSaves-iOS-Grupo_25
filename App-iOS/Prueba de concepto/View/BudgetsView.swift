@@ -7,10 +7,21 @@
 
 import SwiftUI
 
+
+
 // Vista para "Budgets"
 struct BudgetsView: View {
+    
+    
+    @State private var dataArray: [Budget] = []
 
-    @State private var dataArray: [Budget] = [
+    /*@State private var dataArray: [Budget] = [
+        Budget(name: "House", date: "2023-09-25", percentage: "60%"),
+        Budget(name: "Car", date: "2023-10-01", percentage: "80%"),
+        Budget(name: "Bike", date: "2023-10-02", percentage: "40%"),
+        Budget(name: "Boat", date: "2023-10-03", percentage: "70%")
+    ]*/
+    @State private var dataArrayGroup: [Budget] = [
         Budget(name: "House", date: "2023-09-25", percentage: "60%"),
         Budget(name: "Car", date: "2023-10-01", percentage: "80%"),
         Budget(name: "Bike", date: "2023-10-02", percentage: "40%"),
@@ -18,6 +29,29 @@ struct BudgetsView: View {
     ]
     @State private var isAddBudgetViewPresented = false
       @StateObject private var functions = GlobalFunctions()
+    
+    // Function to fetch budget data
+        func fetchBudgetData() {
+            BudgetsViewModel().fetchBudgets { budgets in
+                    if let budgets = budgets {
+                        // Update the dataArray with the fetched data
+                        dataArray = budgets.map { budget in
+                            // Transform the fetched data into the Budget struct
+                            return Budget(name: budget.name, date: formatDate(budget.date), percentage: "\(budget.total)%")
+                        }
+                    } else {
+                        // Handle the case where budgets is nil (error case)
+                        print("Budgets array is nil")
+                    }
+                }
+        }
+
+        // Helper function to format the date
+        func formatDate(_ date: Date) -> String {
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd"
+            return dateFormatter.string(from: date)
+        }
 
     var body: some View {
         
@@ -93,15 +127,16 @@ struct BudgetsView: View {
                 .padding(.top, 20)
                 .foregroundColor(functions.isDaytime ? Color.black : Color.white)
             
-            ItemRow(name: "Europe", date: "2023-09-27", percentage: "75%")
-                .foregroundColor(functions.isDaytime ? Color.black : Color.white)
-            
-            Divider()
-                .foregroundColor(functions.isDaytime ? Color.black : Color.white)
-            
-            ItemRow(name: "Car", date: "2023-09-28", percentage: "90%")
-                .foregroundColor(functions.isDaytime ? Color.black : Color.white)
+            List {
+                ForEach(self.dataArrayGroup, id: \.self) { item in
+                    ItemRow(name: item.name, date: item.date, percentage: item.percentage)
+                        
+                }.onDelete(perform: delete)
+                .foregroundColor(functions.isDaytime ? Color.black : Color.white)            }
         }
+        .onAppear {
+                    fetchBudgetData()
+                }
         Spacer()
     }
         .background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
