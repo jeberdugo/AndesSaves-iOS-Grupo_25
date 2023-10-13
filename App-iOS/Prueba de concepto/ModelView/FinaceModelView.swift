@@ -17,7 +17,36 @@ final class ContentViewModel: ObservableObject {
     @Published public var selectedType: Int = 0 // 0 for Income, 1 for Expense
     @Published public var selectedExpenseCategory: Int = 0
     @Published public var balance: Double = 0
+    
+    
+    func addIncome(source: String,  amount: Int) {
+        let income = IncomeIn( amount: amount, source: source, user: Auth.shared.getUser()!)
+        guard let url = URL(string: "https://andesaves-backend.onrender.com/incomes/new") else { return }
 
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        let token = Auth.shared.getAccessToken()!
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        do {
+            let jsonData = try JSONEncoder().encode(income)
+            request.httpBody = jsonData
+        } catch {
+            print("Error encoding income data")
+            return
+        }
+
+        URLSession.shared.dataTask(with: request) { (data, response, error) in
+            if let error = error {
+                print("Error making POST request: \(error)")
+                return
+            }
+            if let response = response as? HTTPURLResponse {
+                print("Response status code: \(response.statusCode)")
+            }
+        }.resume()
+    }
 }
 
 

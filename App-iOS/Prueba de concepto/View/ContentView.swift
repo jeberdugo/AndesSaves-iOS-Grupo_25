@@ -253,7 +253,7 @@ struct AddTransactionView: View {
                 if viewModel.selectedType == 1 && viewModel.balance-(Double(viewModel.transactionAmount) ?? 0.0) < 0 {
                     showAlert = true
                 } else {
-                                // Add your action logic here to save the transaction
+                    viewModel.addIncome(source: viewModel.transactionSource,amount: Int(viewModel.transactionAmount)!)
                         }
             }) {
                 Text("Add")
