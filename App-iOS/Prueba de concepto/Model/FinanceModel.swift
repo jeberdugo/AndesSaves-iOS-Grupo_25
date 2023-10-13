@@ -47,6 +47,13 @@ struct Budget:Hashable {
     var percentage: String
 }
 
+struct IncomeIn:  Codable {
+    let amount: Int
+    let source: String
+    let user: String
+
+}
+
 struct Transaction: Decodable, Identifiable {
     var id : String?
     
@@ -55,7 +62,7 @@ struct Transaction: Decodable, Identifiable {
     struct Income: Decodable, Identifiable {
         var id : String?
         
-        let _id: String
+        let _id: String?
         let amount: Int
         let date: Date
         let source: String
@@ -65,7 +72,7 @@ struct Transaction: Decodable, Identifiable {
     
     struct Expense: Decodable , Identifiable{
         var id : String?
-        let _id: String
+        let _id: String?
         let amount: Int
         let date: Date
         let category: String
