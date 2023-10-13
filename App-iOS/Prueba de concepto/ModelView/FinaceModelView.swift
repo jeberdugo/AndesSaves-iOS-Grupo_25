@@ -421,7 +421,7 @@ final class GlobalFunctions: ObservableObject {
  
         var isDaytime: Bool {
             let hour = Calendar.current.component(.hour, from: Date())
-            return hour >= 6 && hour < 16
+            return hour >= 6 && hour < 18
     }
 }
 

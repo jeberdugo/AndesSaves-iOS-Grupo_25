@@ -101,53 +101,14 @@ import SwiftUI
                     
                      viewModel.listCategories()
                      
-                    let tagAdd = viewModel.categories.contains { category in
+                    let tagAdd = viewModel.categoriesWithId.contains { category in
                         return category.name == "Add"
-                    }
-                    
-                    let tagEntertainment = viewModel.categories.contains { category in
-                        return category.name == "Entertainment"
-                    }
-                    
-                    let tagFood = viewModel.categories.contains { category in
-                        return category.name == "Food"
-                    }
-                    
-                    let tagHealth = viewModel.categories.contains { category in
-                        return category.name == "Health"
-                    }
-                    
-                    let tagHousing = viewModel.categories.contains { category in
-                        return category.name == "Housing"
-                    }
-                    
-                    let tagTransportation = viewModel.categories.contains { category in
-                        return category.name == "Transportation"
                     }
                     
                     if !tagAdd {
                         viewModel.createCategory(name: "Add")
                     }
                     
-                    if !tagEntertainment {
-                        viewModel.createCategory(name: "Entertainment")
-                    }
-                    
-                    if !tagFood {
-                        viewModel.createCategory(name: "Food")
-                    }
-                    
-                    if !tagHealth {
-                        viewModel.createCategory(name: "Health")
-                    }
-                    
-                    if !tagHousing {
-                        viewModel.createCategory(name: "Housing")
-                    }
-                    
-                    if !tagTransportation {
-                        viewModel.createCategory(name: "Transportation")
-                    }
                     viewModel.listCategories()
                             }
                 
