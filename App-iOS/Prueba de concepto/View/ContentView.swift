@@ -53,10 +53,11 @@ struct ContentView: View {
                                 .padding()
                                 .background(Color.black)
                                 .cornerRadius(10)
+                            
                         }
                         .sheet(isPresented: $viewModel.isAddingTransaction) {
 
-                            ZStack() {
+                            /*ZStack() {
                                 //Color(red: 21/255, green: 191/255, blue: 129/255).edgesIgnoringSafeArea(.all)
                                 if(viewModel.selectedType == 1){
                                     Color(hex:"EE446D ").edgesIgnoringSafeArea(.all)                                                                    }
@@ -126,7 +127,7 @@ struct ContentView: View {
                                         }
                                     ),
                                     secondaryButton: .cancel())
-                            }
+                            }*/
 
                             AddTransactionView()
                                 .environmentObject(viewModel)
@@ -150,6 +151,7 @@ struct AddTransactionView: View {
     @EnvironmentObject var viewModel: ContentViewModel
     @EnvironmentObject var functions: GlobalFunctions
     @EnvironmentObject var historyViewModel: HistoryViewModel
+    @State private var showAlert = false
     @State private var showImagePicker = false
     @State private var image: Image? 
     @State private var isShowingImage = false
@@ -247,15 +249,32 @@ struct AddTransactionView: View {
             Button(action: {
                 // Add action logic here to save the transaction
                 checkAndSendNotificationIfNeeded()
+                
+                if viewModel.selectedType == 1 && viewModel.balance-(Double(viewModel.transactionAmount) ?? 0.0) < 0 {
+                    showAlert = true
+                } else {
+                                // Add your action logic here to save the transaction
+                        }
             }) {
                 Text("Add")
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(viewModel.selectedType == 1 ? Color(hex: "EE446D") : Color(hex: "12CD8A"))
+                    .background(viewModel.selectedType == 1 ? Color(hex:"EE446D") : Color(hex:"12CD8A"))
                     .cornerRadius(10)
             }
             .padding()
+            .alert(isPresented: $showAlert) {
+                Alert(
+                    title: Text("Warning: Negative Balance"),
+                    message: Text("Your expense transaction will result in a negative balance. Are you sure you want to proceed?"),
+                    primaryButton: .destructive(
+                        Text("Confirm"),
+                        action: {
+                            // Add your action logic here to handle the user's confirmation
+                        }
+                    ),
+                    secondaryButton: .cancel())}
         }
         .background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
         
