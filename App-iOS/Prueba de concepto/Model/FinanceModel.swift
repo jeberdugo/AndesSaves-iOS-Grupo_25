@@ -57,3 +57,12 @@ struct CategoryWithId: Codable {
     var name: String
     var user: String
 }
+
+struct Expense: Codable{
+    var amount: Int
+    var date: Date
+    var category: String
+    var description: String
+    var user: String
+    var isRecurring: Bool
+}

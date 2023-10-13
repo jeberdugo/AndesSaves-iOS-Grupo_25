@@ -20,11 +20,9 @@ struct FinanceApp: App {
 }
 
 struct ContentView: View {
-    @State private var showAlert = false
     @StateObject private var viewModel = ContentViewModel()
     @StateObject private var functions = GlobalFunctions()
     @StateObject private var History = HistoryViewModel()
-    let expenseCategories = ["Food", "Transport", "House", "Others"]
     
     var body: some View {
         NavigationView {
@@ -55,84 +53,10 @@ struct ContentView: View {
                                 .cornerRadius(10)
                         }
                         .sheet(isPresented: $viewModel.isAddingTransaction) {
-
-                            ZStack() {
-                                //Color(red: 21/255, green: 191/255, blue: 129/255).edgesIgnoringSafeArea(.all)
-                                if(viewModel.selectedType == 1){
-                                    Color(hex:"EE446D ").edgesIgnoringSafeArea(.all)                                                                    }
-                                else{
-                                    Color(hex:"12CD8A").edgesIgnoringSafeArea(.all)                                  }
-                                VStack {
-                                    Text("History")
-                                        .font(.title)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(.white)
-                                }
-                            }
-                            .frame(maxWidth: 400, maxHeight: 60)
-                            Spacer()
-                            // Add transaction view goes here
-                            Form {
-                                Section(header: Text("Transaction Details")) {
-                                    TextField("Name", text: $viewModel.transactionName)
-                                    TextField("Amount", text: $viewModel.transactionAmount)
-                                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                                        .keyboardType(.decimalPad)
-                                    TextField("Source", text: $viewModel.transactionSource)
-                                }
-                                
-                                Section(header: Text("Type")) {
-                                    Picker(selection: $viewModel.selectedType, label: Text("Type")) {
-                                        Text("Income").tag(0)
-                                        Text("Expense").tag(1)
-                                    }
-                                    .pickerStyle(SegmentedPickerStyle())
-                                    .padding(.horizontal)                                    }
-                                if viewModel.selectedType == 1 {
-                                    Section(header: Text("Expense Category")) {
-                                        Picker("Select Category", selection: $viewModel.selectedExpenseCategory) {
-                                            ForEach(0..<expenseCategories.count) { index in
-                                                Text(expenseCategories[index])
-                                            }
-                                        }
-                                        .pickerStyle(SegmentedPickerStyle())
-                                    }
-                                }
-                            }
-                            Button(action: {
-                                
-                                if viewModel.selectedType == 1 && viewModel.balance-(Double(viewModel.transactionAmount) ?? 0.0) < 0 {
-                                    showAlert = true
-                                } else {
-                                                // Add your action logic here to save the transaction
-                                        }
-                            }) {
-                                Text("Add")
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(viewModel.selectedType == 1 ? Color(hex:"EE446D") : Color(hex:"12CD8A"))
-                                    .cornerRadius(10)
-                            }
-                            .padding()
-                            .alert(isPresented: $showAlert) {
-                                Alert(
-                                    title: Text("Warning: Negative Balance"),
-                                    message: Text("Your expense transaction will result in a negative balance. Are you sure you want to proceed?"),
-                                    primaryButton: .destructive(
-                                        Text("Confirm"),
-                                        action: {
-                                            // Add your action logic here to handle the user's confirmation
-                                        }
-                                    ),
-                                    secondaryButton: .cancel())
-                            }
-
                             AddTransactionView()
                                 .environmentObject(viewModel)
                                 .environmentObject(functions)
                                 .environmentObject(History)
-
                         }
                     }
                     Spacer(minLength: 10)
