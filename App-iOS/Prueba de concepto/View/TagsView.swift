@@ -37,6 +37,8 @@ import SwiftUI
                 ], spacing: 50)
                 {
                     
+                    
+                    
                     ForEach(viewModel.categoriesWithId.indices, id: \.self) { index in
                         ZStack {
                             Rectangle()
@@ -51,15 +53,15 @@ import SwiftUI
 
                             VStack {
                                 Spacer(minLength: 8)
-                                Image(viewModel.categoriesWithId[index].name)
-                                    .resizable()
-                                    .frame(width: 45, height: 45)
-                                    .onAppear {
-                                        if let isImageFound = UIImage(named: viewModel.categoriesWithId[index].name)?.pngData()?.isEmpty {
-                                            if !isImageFound {
-                                                Image("DefaultImage")
-                                            }
-                                        }
+                                if viewModel.categoriesWithId[index].name == "Add"{
+                                    Image(viewModel.categoriesWithId[index].name)
+                                        .resizable()
+                                        .frame(width: 45, height: 45)
+                                }
+                                else{
+                                        Image("DefaultImage")
+                                        .resizable()
+                                        .frame(width: 45, height: 45)
                                     }
 
                                 Text(viewModel.categoriesWithId[index].name)
@@ -98,16 +100,7 @@ import SwiftUI
                     }
                 }
                 .onAppear {
-                    
-                     viewModel.listCategories()
-                     
-                    let tagAdd = viewModel.categoriesWithId.contains { category in
-                        return category.name == "Add"
-                    }
-                    
-                    if !tagAdd {
-                        viewModel.createCategory(name: "Add")
-                    }
+
                     
                     viewModel.listCategories()
                             }

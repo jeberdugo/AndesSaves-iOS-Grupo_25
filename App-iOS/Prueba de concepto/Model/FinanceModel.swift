@@ -54,6 +54,14 @@ struct IncomeIn:  Codable {
 
 }
 
+struct Income: Decodable, Identifiable {
+    var id : String?
+    let amount: Int
+    let date: Date
+    let source: String
+    let user: String
+}
+
 struct Transaction: Decodable, Identifiable {
     var id : String?
     
@@ -61,7 +69,6 @@ struct Transaction: Decodable, Identifiable {
     
     struct Income: Decodable, Identifiable {
         var id : String?
-        
         let _id: String?
         let amount: Int
         let date: Date
