@@ -16,7 +16,34 @@ final class ContentViewModel: ObservableObject {
     @Published public var transactionSource = ""
     @Published public var selectedType: Int = 0 // 0 for Income, 1 for Expense
     @Published public var selectedExpenseCategory: Int = 0
-    @Published public var balance: Double = 0
+    @Published public var balance: Double = 60.0
+        
+    func getBalance() {
+        let url = URL(string: "https://andesaves-backend.onrender.com/users/balance")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+    
+        let token = Auth.shared.getAccessToken()!
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let data = data {
+                do {
+                    if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+                        if let balance = json["balance"] as? Double{
+                            DispatchQueue.main.async {
+                                self.balance = balance
+                            }
+                        }
+                    }
+                } catch let error {
+                    print(error.localizedDescription)
+                }
+            }
+        }.resume()
+    }
+        
     
     
     func addIncome(source: String,  amount: Int) {

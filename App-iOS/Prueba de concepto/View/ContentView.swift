@@ -41,7 +41,7 @@ struct ContentView: View {
                             .fontWeight(.bold)
                             .foregroundColor(.white)
                        
-                        Text("$\(String(format: "%.2f", 100))")
+                        Text("$\(String(format: "%.2f", viewModel.balance))")
                             .font(.largeTitle)
                             .foregroundColor(.white)
                         
@@ -140,6 +140,10 @@ struct ContentView: View {
                     MainMenu()
                     
                 }
+            }
+        }.onAppear{
+            Task {
+                await viewModel.getBalance()
             }
         }
         .navigationBarBackButtonHidden(/*@START_MENU_TOKEN@*/true/*@END_MENU_TOKEN@*/)
