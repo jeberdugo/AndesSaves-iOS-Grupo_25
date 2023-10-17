@@ -16,8 +16,64 @@ final class ContentViewModel: ObservableObject {
     @Published public var transactionSource = ""
     @Published public var selectedType: Int = 0 // 0 for Income, 1 for Expense
     @Published public var selectedExpenseCategory: Int = 0
-    @Published public var balance: Double = 0
+    @Published public var balance: Double = 60.0
+        
+    func getBalance() {
+        let url = URL(string: "https://andesaves-backend.onrender.com/users/balance")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+    
+        let token = Auth.shared.getAccessToken()!
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let data = data {
+                do {
+                    if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+                        if let balance = json["balance"] as? Double{
+                            DispatchQueue.main.async {
+                                self.balance = balance
+                            }
+                        }
+                    }
+                } catch let error {
+                    print(error.localizedDescription)
+                }
+            }
+        }.resume()
+    }
+        
+    
+    
+    func addIncome(source: String,  amount: Int) {
+        let income = IncomeIn( amount: amount, source: source, user: Auth.shared.getUser()!)
+        guard let url = URL(string: "https://andesaves-backend.onrender.com/incomes/new") else { return }
 
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        let token = Auth.shared.getAccessToken()!
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        do {
+            let jsonData = try JSONEncoder().encode(income)
+            request.httpBody = jsonData
+        } catch {
+            print("Error encoding income data")
+            return
+        }
+
+        URLSession.shared.dataTask(with: request) { (data, response, error) in
+            if let error = error {
+                print("Error making POST request: \(error)")
+                return
+            }
+            if let response = response as? HTTPURLResponse {
+                print("Response status code: \(response.statusCode)")
+            }
+        }.resume()
+    }
 }
 
 
@@ -35,6 +91,7 @@ final class MainMenuViewModel: ObservableObject {
 
 final class HistoryViewModel: ObservableObject {
     @Published public var transactions: [Transaction] = [ ]
+    let currentDateTime = Date()
     
     // Función para formatear la fecha y hora
     func formatDate(_ date: Date) -> String {
@@ -78,6 +135,49 @@ final class HistoryViewModel: ObservableObject {
         }.resume()
 
         }
+    
+    @Published var incomes = [Income]()
+    
+    func listIncomes() {
+            guard let url = URL(string: "https://andesaves-backend.onrender.com/categories/list/\(Auth.shared.getUser()!)") else { return }
+
+            var request = URLRequest(url: url)
+            request.httpMethod = "GET"
+            request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+            print("token" + Auth.shared.getAccessToken()!)
+            let token = Auth.shared.getAccessToken()
+            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+            URLSession.shared.dataTask(with: request) { data, response, error in
+                if let data = data {
+                    do {
+                        if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [[String: Any]] {
+                            // Parse and handle the JSON response as needed
+                            DispatchQueue.main.async {
+                                self.incomes = json.map { dict in
+                                    Income(
+                                        id: dict["id"] as? String ?? "",
+                                        amount: dict["amount"] as? Int ?? 0,
+                                        date: dict["date"] as? Date ?? self.currentDateTime,
+                                        source: dict["source"] as? String ?? "",
+                                        user: dict["user"] as? String ?? ""
+                                    )
+                                }
+                            }
+                        }
+                    } catch let error {
+                        print(error.localizedDescription)
+                    }
+                }
+                if let error = error {
+                    print("Error making GET request: \(error)")
+                                   return
+                               }
+                               if let response = response as? HTTPURLResponse {
+                                   print("Response status code: \(response.statusCode)")
+                               }
+                           }.resume()
+                       }
 
 }
 
@@ -165,6 +265,8 @@ final class TagsViewModel: ObservableObject {
         @Published var tagsItems: [TagsItem] = [
             TagsItem(title: "Add", imageName: "Add")
         ]
+    
+        @Published var count = 0
 
         @Published var isEditMode = false
         @Published var isAddTagDialogPresented = false
@@ -236,6 +338,9 @@ final class TagsViewModel: ObservableObject {
                                     )
                                 }
                                 
+                                let category = CategoryWithId(id: "-1", name: "Add", user: Auth.shared.getUser()!)
+                                self.categoriesWithId.insert(category, at: self.categoriesWithId.count - 1)
+                                
                                 // Save the category ID of the first category (if available)
                                 if let firstCategoryId = self.categoriesWithId.first?.id {
                                     UserDefaults.standard.set(firstCategoryId, forKey: "SelectedCategoryIdKey")
@@ -259,8 +364,11 @@ final class TagsViewModel: ObservableObject {
     
     
     func deleteCategory(categoryId: String) {
-                  let url = URL(string: "https://andesaves-backend.onrender.com/category/delete/\(categoryId)")!
+                  let url = URL(string: "https://andesaves-backend.onrender.com/categories/delete/\(categoryId)")!
                   var request = URLRequest(url: url)
+                    print("hola")
+                    print(categoryId)
+                    print(Auth.shared.getUser()!)
                   request.httpMethod = "DELETE"
                   request.addValue("application/json", forHTTPHeaderField: "Content-Type")
                   print("token" + Auth.shared.getAccessToken()!)
@@ -421,7 +529,7 @@ final class GlobalFunctions: ObservableObject {
  
         var isDaytime: Bool {
             let hour = Calendar.current.component(.hour, from: Date())
-            return hour >= 6 && hour < 16
+            return hour >= 6 && hour < 18
     }
 }
 

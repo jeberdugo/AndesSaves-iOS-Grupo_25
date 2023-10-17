@@ -37,6 +37,8 @@ import SwiftUI
                 ], spacing: 50)
                 {
                     
+                    
+                    
                     ForEach(viewModel.categoriesWithId.indices, id: \.self) { index in
                         ZStack {
                             Rectangle()
@@ -51,15 +53,15 @@ import SwiftUI
 
                             VStack {
                                 Spacer(minLength: 8)
-                                Image(viewModel.categoriesWithId[index].name)
-                                    .resizable()
-                                    .frame(width: 45, height: 45)
-                                    .onAppear {
-                                        if let isImageFound = UIImage(named: viewModel.categoriesWithId[index].name)?.pngData()?.isEmpty {
-                                            if !isImageFound {
-                                                Image("DefaultImage")
-                                            }
-                                        }
+                                if viewModel.categoriesWithId[index].name == "Add"{
+                                    Image(viewModel.categoriesWithId[index].name)
+                                        .resizable()
+                                        .frame(width: 45, height: 45)
+                                }
+                                else{
+                                        Image("DefaultImage")
+                                        .resizable()
+                                        .frame(width: 45, height: 45)
                                     }
 
                                 Text(viewModel.categoriesWithId[index].name)
@@ -98,56 +100,8 @@ import SwiftUI
                     }
                 }
                 .onAppear {
+
                     
-                     viewModel.listCategories()
-                     
-                    let tagAdd = viewModel.categories.contains { category in
-                        return category.name == "Add"
-                    }
-                    
-                    let tagEntertainment = viewModel.categories.contains { category in
-                        return category.name == "Entertainment"
-                    }
-                    
-                    let tagFood = viewModel.categories.contains { category in
-                        return category.name == "Food"
-                    }
-                    
-                    let tagHealth = viewModel.categories.contains { category in
-                        return category.name == "Health"
-                    }
-                    
-                    let tagHousing = viewModel.categories.contains { category in
-                        return category.name == "Housing"
-                    }
-                    
-                    let tagTransportation = viewModel.categories.contains { category in
-                        return category.name == "Transportation"
-                    }
-                    
-                    if !tagAdd {
-                        viewModel.createCategory(name: "Add")
-                    }
-                    
-                    if !tagEntertainment {
-                        viewModel.createCategory(name: "Entertainment")
-                    }
-                    
-                    if !tagFood {
-                        viewModel.createCategory(name: "Food")
-                    }
-                    
-                    if !tagHealth {
-                        viewModel.createCategory(name: "Health")
-                    }
-                    
-                    if !tagHousing {
-                        viewModel.createCategory(name: "Housing")
-                    }
-                    
-                    if !tagTransportation {
-                        viewModel.createCategory(name: "Transportation")
-                    }
                     viewModel.listCategories()
                             }
                 
