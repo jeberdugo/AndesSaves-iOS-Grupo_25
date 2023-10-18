@@ -95,7 +95,7 @@ struct RegisterView: View {
                     .padding()
                     
                     Button(action: {
-                        viewModel.register(name: self.name,phoneNumber: self.phone, password: self.password, email: self.email)
+                        viewModel.register(name: self.name, phoneNumber: self.phone, password: self.password, passwordConfirmation: self.passwordConfirmation, email: self.email)
                     }) {
                         Text("Register")
                             .foregroundColor(Color.white)

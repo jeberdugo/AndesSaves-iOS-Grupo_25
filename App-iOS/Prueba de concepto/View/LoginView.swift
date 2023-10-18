@@ -53,11 +53,10 @@ struct LoginView: View {
                 
                 
                 Button(action: {
-                    viewModel.login(email: self.email, password: self.password)  { success in
-                        if success {
+                    viewModel.login(email: self.email, password: self.password)
+                    if viewModel.isLoggedIn {
                             self.showNextView = true
                         }
-                    }
                 }) {
                     Text("Login")
                         .foregroundColor(Color.white)

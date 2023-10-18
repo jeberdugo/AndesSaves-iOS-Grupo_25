@@ -86,9 +86,7 @@ struct HistoryView: View {
                 .navigationBarHidden(true)
             }
         }.onAppear {
-            Task {
-                await viewModel.getData()
-            }
+            
         }
     }
     

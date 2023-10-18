@@ -8,6 +8,7 @@
 import Foundation
 import Combine
 import SwiftUI
+import Firebase
 
 final class ContentViewModel: ObservableObject {
     @Published public var isAddingTransaction = false
@@ -18,62 +19,16 @@ final class ContentViewModel: ObservableObject {
     @Published public var selectedExpenseCategory: Int = 0
     @Published public var balance: Double = 60.0
         
+    
     func getBalance() {
-        let url = URL(string: "https://andesaves-backend.onrender.com/users/balance")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-    
-        let token = Auth.shared.getAccessToken()!
-            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let data = data {
-                do {
-                    if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-                        if let balance = json["balance"] as? Double{
-                            DispatchQueue.main.async {
-                                self.balance = balance
-                            }
-                        }
-                    }
-                } catch let error {
-                    print(error.localizedDescription)
-                }
-            }
-        }.resume()
-    }
-        
-    
-    
-    func addIncome(source: String,  amount: Int) {
-        let income = IncomeIn( amount: amount, source: source, user: Auth.shared.getUser()!)
-        guard let url = URL(string: "https://andesaves-backend.onrender.com/incomes/new") else { return }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        let token = Auth.shared.getAccessToken()!
-            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-        do {
-            let jsonData = try JSONEncoder().encode(income)
-            request.httpBody = jsonData
-        } catch {
-            print("Error encoding income data")
-            return
+            
         }
 
-        URLSession.shared.dataTask(with: request) { (data, response, error) in
-            if let error = error {
-                print("Error making POST request: \(error)")
-                return
-            }
-            if let response = response as? HTTPURLResponse {
-                print("Response status code: \(response.statusCode)")
-            }
-        }.resume()
-    }
+    func addIncome(source: String,  amount: Int) {
+        
+        }
+    
+
 }
 
 
@@ -101,84 +56,11 @@ final class HistoryViewModel: ObservableObject {
     }
     
     
-    func getData() {
-            guard let url = URL(string: "https://andesaves-backend.onrender.com/users/transactions") else { return }
-            
-            var request = URLRequest(url: url)
-            request.httpMethod = "GET"
-        let token = Auth.shared.getAccessToken()!
-            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-            
-        URLSession.shared.dataTask(with: request) { (data, response, error) in
-            if let _ = error {
-                print("Error")
-            }
-            
-            if let data = data,
-               let httpResponse = response as? HTTPURLResponse,
-               httpResponse.statusCode == 200 {
-                let decoder = JSONDecoder()
-                let dateFormatter = DateFormatter()
-                dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
-                dateFormatter.locale = Locale(identifier: "en_US_POSIX")
-                dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
-                decoder.dateDecodingStrategy = .formatted(dateFormatter)
-                
-                do {
-                    let transactionsDataModel = try decoder.decode(TransactionsResponse.self, from: data)
-                    self.transactions = transactionsDataModel.transactions
-                    print("Transactions \(transactionsDataModel)")
-                } catch {
-                    print("Decoding error: \(error)")
-                }
-            }
-        }.resume()
-
-        }
-    
     @Published var incomes = [Income]()
     
     func listIncomes() {
-            guard let url = URL(string: "https://andesaves-backend.onrender.com/categories/list/\(Auth.shared.getUser()!)") else { return }
-
-            var request = URLRequest(url: url)
-            request.httpMethod = "GET"
-            request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-            print("token" + Auth.shared.getAccessToken()!)
-            let token = Auth.shared.getAccessToken()
-            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-            URLSession.shared.dataTask(with: request) { data, response, error in
-                if let data = data {
-                    do {
-                        if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [[String: Any]] {
-                            // Parse and handle the JSON response as needed
-                            DispatchQueue.main.async {
-                                self.incomes = json.map { dict in
-                                    Income(
-                                        id: dict["id"] as? String ?? "",
-                                        amount: dict["amount"] as? Int ?? 0,
-                                        date: dict["date"] as? Date ?? self.currentDateTime,
-                                        source: dict["source"] as? String ?? "",
-                                        user: dict["user"] as? String ?? ""
-                                    )
-                                }
-                            }
-                        }
-                    } catch let error {
-                        print(error.localizedDescription)
-                    }
-                }
-                if let error = error {
-                    print("Error making GET request: \(error)")
-                                   return
-                               }
-                               if let response = response as? HTTPURLResponse {
-                                   print("Response status code: \(response.statusCode)")
-                               }
-                           }.resume()
-                       }
-
+        
+    }
 }
 
 
@@ -195,68 +77,13 @@ final class BudgetsViewModel: ObservableObject {
     }
 
     func createBudget(name: String, total: Int, date: Date, type: Int) {
-        let budget = Budget(name: name, total: total, user: Auth.shared.getUser()!, date: date, type: type)
-        guard let url = URL(string: "https://andesaves-backend.onrender.com/budgets/new") else { return }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        let token = Auth.shared.getAccessToken()
-            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-        do {
-            let jsonData = try JSONEncoder().encode(budget)
-            request.httpBody = jsonData
-        } catch {
-            print("Error encoding budget data")
-            return
-        }
-
-        URLSession.shared.dataTask(with: request) { (data, response, error) in
-            if let error = error {
-                print("Error making POST request: \(error)")
-                return
-            }
-            if let response = response as? HTTPURLResponse {
-                print("Response status code: \(response.statusCode)")
-            }
-        }.resume()
+        
     }
     
     func fetchBudgets(completion: @escaping ([Budget]?) -> Void) {
-            guard let url = URL(string: "https://andesaves-backend.onrender.com/budgets/list/\(Auth.shared.getUser()!)") else {
-                completion(nil)
-                return
-            }
-
-            var request = URLRequest(url: url)
-            request.httpMethod = "GET"
-            request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-            let token = Auth.shared.getAccessToken()!
-            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-            URLSession.shared.dataTask(with: request) { (data, response, error) in
-                if let error = error {
-                    print("Error making GET request: \(error)")
-                    completion(nil)
-                    return
-                }
-                if let response = response as? HTTPURLResponse {
-                    print("Response status code: \(response.statusCode)")
-                }
-                if let data = data {
-                    do {
-                        let budgets = try JSONDecoder().decode([Budget].self, from: data)
-                        completion(budgets)
-                    } catch {
-                        print("Error decoding budget data")
-                        completion(nil)
-                    }
-                } else {
-                    completion(nil)
-                }
-            }.resume()
-        }
+        
+    }
+    
 
 }
 
@@ -284,125 +111,17 @@ final class TagsViewModel: ObservableObject {
         @Published var selectedCategoryId: String?
     
     func createCategory(name: String) {
-                   let category = Category(name: name, user: Auth.shared.getUser()!)
-                   guard let url = URL(string: "https://andesaves-backend.onrender.com/categories/new") else { return }
-
-                   var request = URLRequest(url: url)
-                   request.httpMethod = "POST"
-                   request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-                   print("token" + Auth.shared.getAccessToken()!)
-                   let token = Auth.shared.getAccessToken()
-                       request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-                   do {
-                       let jsonData = try JSONEncoder().encode(category)
-                       request.httpBody = jsonData
-                   } catch {
-                       print("Error encoding budget data")
-                       return
-                   }
-
-                   URLSession.shared.dataTask(with: request) { (data, response, error) in
-                       if let error = error {
-                           print("Error making POST request: \(error)")
-                           return
-                       }
-                       if let response = response as? HTTPURLResponse {
-                           print("Response status code: \(response.statusCode)")
-                       }
-                   }.resume()
                }
     
     
     func listCategories() {
-            guard let url = URL(string: "https://andesaves-backend.onrender.com/categories/list/\(Auth.shared.getUser()!)") else { return }
-
-            var request = URLRequest(url: url)
-            request.httpMethod = "GET"
-            request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-            print("token" + Auth.shared.getAccessToken()!)
-            let token = Auth.shared.getAccessToken()
-            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-            URLSession.shared.dataTask(with: request) { data, response, error in
-                if let data = data {
-                    do {
-                        if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [[String: Any]] {
-                            // Parse and handle the JSON response as needed
-                            DispatchQueue.main.async {
-                                self.categoriesWithId = json.map { dict in
-                                    CategoryWithId(
-                                        id: dict["id"] as? String ?? "",
-                                        name: dict["name"] as? String ?? "",
-                                        user: dict["user"] as? String ?? ""
-                                    )
-                                }
-                                
-                                let category = CategoryWithId(id: "-1", name: "Add", user: Auth.shared.getUser()!)
-                                self.categoriesWithId.insert(category, at: self.categoriesWithId.count - 1)
-                                
-                                // Save the category ID of the first category (if available)
-                                if let firstCategoryId = self.categoriesWithId.first?.id {
-                                    UserDefaults.standard.set(firstCategoryId, forKey: "SelectedCategoryIdKey")
-                                    self.selectedCategoryId = firstCategoryId // Update the selectedCategoryId property
-                                }
-                            }
-                        }
-                    } catch let error {
-                        print(error.localizedDescription)
-                    }
-                }
-                if let error = error {
-                    print("Error making GET request: \(error)")
-                                   return
-                               }
-                               if let response = response as? HTTPURLResponse {
-                                   print("Response status code: \(response.statusCode)")
-                               }
-                           }.resume()
                        }
     
     
     func deleteCategory(categoryId: String) {
-                  let url = URL(string: "https://andesaves-backend.onrender.com/categories/delete/\(categoryId)")!
-                  var request = URLRequest(url: url)
-                    print("hola")
-                    print(categoryId)
-                    print(Auth.shared.getUser()!)
-                  request.httpMethod = "DELETE"
-                  request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-                  print("token" + Auth.shared.getAccessToken()!)
-                  let token = Auth.shared.getAccessToken()
-                  request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-                  URLSession.shared.dataTask(with: request) { data, response, error in
-                      if let data = data {
-                          do {
-                              if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-                                  if let success = json["success"] as? Bool, success {
-                                      print("Category deleted successfully")
-                                      
-                                      if self.selectedCategoryId == categoryId {
-                                          self.selectedCategoryId = nil
-                                      }
-                                  } else {
-                                      print("Category deletion failed.")
-                                  }
-                              }
-                          } catch let error {
-                              print(error.localizedDescription)
-                          }
-                      }
-                      if let error = error {
-                          print("Error making GET request: \(error)")
-                          return
-                      }
-                      if let response = response as? HTTPURLResponse {
-                          print("Response status code: \(response.statusCode)")
-                                           }
-                                       }.resume()
-                                   }
+                  
             }
+    }
 
 
 final class SummaryViewModel: ObservableObject {
@@ -411,41 +130,45 @@ final class SummaryViewModel: ObservableObject {
 
 final class RegisterViewModel: ObservableObject {
 
-        
-    func register(name: String, phoneNumber : String, password : String, email: String)
-    {
-        let url = URL(string: "https://andesaves-backend.onrender.com/auth/register")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        let parameters: [String: Any] = [
-            "name": name,
-            "email": email,
-            "phoneNumber": phoneNumber,
-            "password": password
-        ]
-        
-        do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: parameters, options: .prettyPrinted)
-        } catch let error {
-            print(error.localizedDescription)
+    func register(name: String, phoneNumber: String, password: String, passwordConfirmation: String, email: String) {
+        if password != passwordConfirmation {
+            // Manejo de errores si las contraseñas no coinciden
+            // Puedes mostrar una alerta al usuario
+            return
         }
-        
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let data = data {
-                do {
-                    print(data)
-                    if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-                        print(json)
+
+        Auth.auth().createUser(withEmail: email, password: password) { (Result, error) in
+            if error != nil {
+                print(error!.localizedDescription)
+            } else {
+                // Registro exitoso
+                // Aquí puedes usar el usuario actual para actualizar su información en Firebase
+                let user = Auth.auth().currentUser
+                if let user = user {
+                    let db = Firestore.firestore()
+                    let ref = db.collection("users").document(user.uid)
+                    ref.setData(["balance": 0, "email": email, "name": name, "phone": phoneNumber, "userId": user.uid]){error in
+                        if let error = error{
+                            print(error.localizedDescription)
+                        }
+                        
                     }
-                } catch let error {
-                    print(error.localizedDescription)
+                    
+                    let changeRequest = user.createProfileChangeRequest()
+                    changeRequest.displayName = name
+                    changeRequest.commitChanges { (error) in
+                        if let error = error {
+                            // Manejar errores al actualizar el perfil del usuario
+                        }
+                    }
                 }
             }
-        }.resume()
+        }
     }
+
 }
+
+
 
 final class LoginViewModel: ObservableObject {
 
@@ -454,60 +177,18 @@ final class LoginViewModel: ObservableObject {
     @Published var token = ""
     @Published var user = ""
     
-    func login(email: String, password: String, completion: @escaping (Bool) -> Void) {
-        let url = URL(string: "https://andesaves-backend.onrender.com/auth/login")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        let parameters: [String: Any] = [
-            "email": email,
-            "password": password
-        ]
-        
-        do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: parameters, options: .prettyPrinted)
-        } catch let error {
-            print(error.localizedDescription)
-        }
-        
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let data = data {
-                do {
-                    if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-                        if let auth = json["auth"] as? Int{
-                            DispatchQueue.main.async {
-                                if auth == 1 {
-                                    if let token2 = json["token"] as? String{
-                                        self.token = token2
-                                        print(token2)
-                                        if let user2 = json["user"] as? String{
-                                            self.user = user2
-                                            print(user2)
-                                            Auth.shared.setCredentials(
-                                                           accessToken: token2, user: user2
-                                                       )
-  
-                                        }
-                                    }
-                                    self.isLoggedIn = true
-                                    completion(true)
-                                } else {
-                                    if let message = json["message"] as? String{
-                                        self.alertItem = AlertItem(message: message)
-                                    }
-                                    completion(false)
-                                }
-                            }
-                        }
-                    }
-                } catch let error {
-                    print(error.localizedDescription)
-                }
+    func login(email: String, password: String ) {
+        Auth.auth().signIn(withEmail: email, password: password){ result, error in
+            if error != nil {
+                print(error!.localizedDescription)
+            } else {
+                self.isLoggedIn = true
             }
-        }.resume()
+        }
     }
+    
 }
+
 final class AccountsViewModel: ObservableObject {
     
     @Published var accounts: [Account] = [
