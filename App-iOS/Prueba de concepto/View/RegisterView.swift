@@ -7,6 +7,7 @@ struct RegisterView: View {
     @State private var phone = ""
     @State private var password = ""
     @State private var passwordConfirmation = ""
+    @State private var showNextView = false
     @StateObject private var functions = GlobalFunctions()
     
     var body: some View {
@@ -26,6 +27,8 @@ struct RegisterView: View {
                                 RoundedRectangle(cornerRadius: 8)
                                     .stroke(Color(hex: "C6C6C6"), lineWidth: 1) // Set your desired border color and width
                             )
+                        
+                          
                         
                         TextField("Email", text: $email)
                             .textFieldStyle(PlainTextFieldStyle())
@@ -95,7 +98,8 @@ struct RegisterView: View {
                     .padding()
                     
                     Button(action: {
-                        viewModel.register(name: self.name, phoneNumber: self.phone, password: self.password, passwordConfirmation: self.passwordConfirmation, email: self.email)
+                           viewModel.register(name: self.name, phoneNumber: self.phone, password: self.password, passwordConfirmation: self.passwordConfirmation, email: self.email)
+                        
                     }) {
                         Text("Register")
                             .foregroundColor(Color.white)
@@ -106,9 +110,20 @@ struct RegisterView: View {
                         
                     }
                     .padding()
+                    
                     Spacer()
                 }.background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
             }
+            .alert(isPresented: $viewModel.isRegistered) {
+                      Alert(title: Text("Registration"), message: Text(viewModel.message), dismissButton: .default(Text("OK")))
+            }
+            .onReceive(viewModel.$message) { newMessage in
+                        // Show the alert when the message is updated
+                        if !newMessage.isEmpty {
+                            viewModel.isRegistered = true
+                            print(viewModel.message)
+                        }
+                    }
+                }
+            }
         }
-    }
-}

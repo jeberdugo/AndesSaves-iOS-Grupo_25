@@ -5,9 +5,12 @@ struct LoginView: View {
     @State private var password = ""
     @State public var token = ""
     @ObservedObject var viewModel = LoginViewModel()
+    @ObservedObject var registerModel = RegisterViewModel()
     @State private var selection: Bool? = false
     @State private var showNextView = false
     @StateObject private var functions = GlobalFunctions()
+    
+    
 
     var body: some View {
         NavigationView {

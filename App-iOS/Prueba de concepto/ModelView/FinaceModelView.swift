@@ -129,41 +129,47 @@ final class SummaryViewModel: ObservableObject {
 }
 
 final class RegisterViewModel: ObservableObject {
-
+    @Published var isRegistered = false
+    @Published var message = ""
+    
     func register(name: String, phoneNumber: String, password: String, passwordConfirmation: String, email: String) {
+        self.isRegistered = false
+        
         if password != passwordConfirmation {
             // Manejo de errores si las contraseñas no coinciden
             // Puedes mostrar una alerta al usuario
-            return
+            self.message = "Passwords do not match"
         }
 
-        Auth.auth().createUser(withEmail: email, password: password) { (Result, error) in
-            if error != nil {
-                print(error!.localizedDescription)
-            } else {
-                // Registro exitoso
-                // Aquí puedes usar el usuario actual para actualizar su información en Firebase
-                let user = Auth.auth().currentUser
-                if let user = user {
-                    let db = Firestore.firestore()
-                    let ref = db.collection("users").document(user.uid)
-                    ref.setData(["balance": 0, "email": email, "name": name, "phone": phoneNumber, "userId": user.uid]){error in
-                        if let error = error{
-                            print(error.localizedDescription)
+        else{
+            Auth.auth().createUser(withEmail: email, password: password) { (Result, error) in
+                if error != nil {
+                    self.message = error!.localizedDescription
+                } else {
+                    // Registro exitoso
+                    self.isRegistered = true
+                    self.message = "Registration completed successfully"
+                    let user = Auth.auth().currentUser
+                    if let user = user {
+                        let db = Firestore.firestore()
+                        let ref = db.collection("users").document(user.uid)
+                        ref.setData(["balance": 0, "email": email, "name": name, "phone": phoneNumber, "userId": user.uid]){error in
+                            if let error = error{
+                                
+                            }
+                            
                         }
                         
-                    }
-                    
-                    let changeRequest = user.createProfileChangeRequest()
-                    changeRequest.displayName = name
-                    changeRequest.commitChanges { (error) in
-                        if let error = error {
-                            // Manejar errores al actualizar el perfil del usuario
+                        let changeRequest = user.createProfileChangeRequest()
+                        changeRequest.displayName = name
+                        changeRequest.commitChanges { (error) in
                         }
                     }
                 }
             }
+            
         }
+        
     }
 
 }
