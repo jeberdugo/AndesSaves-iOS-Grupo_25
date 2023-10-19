@@ -156,6 +156,7 @@ struct AddTransactionView: View {
     @EnvironmentObject var functions: GlobalFunctions
     @EnvironmentObject var historyViewModel: HistoryViewModel
     @State private var showAlert = false
+    @State private var showAlertInteger = false
     @State private var showImagePicker = false
     @State private var image: Image? 
     @State private var isShowingImage = false
@@ -251,14 +252,26 @@ struct AddTransactionView: View {
             }
             
             Button(action: {
-                // Add action logic here to save the transaction
-                checkAndSendNotificationIfNeeded()
-                
-                if viewModel.selectedType == 1 && viewModel.balance-(Double(viewModel.transactionAmount) ?? 0.0) < 0 {
-                    showAlert = true
-                } else {
-                    viewModel.addIncome(source: viewModel.transactionSource,amount: Int(viewModel.transactionAmount)!)
+                if let amount = Int(viewModel.transactionAmount), amount > 0{
+                    // Add action logic here to save the transaction
+                    if viewModel.selectedType == 0{
+                        viewModel.addTransaction(amount: Int(viewModel.transactionAmount) ?? 0, category: "Income", date: Date(), imageUri: "", name: viewModel.transactionName, source: viewModel.transactionSource, type: "Income")
+                    }
+                    else{
+                        if viewModel.balance-(Double(viewModel.transactionAmount) ?? 0.0) < 0 {
+                            showAlert = true
                         }
+                        else{
+                            viewModel.addTransaction(amount: -1*(Int(viewModel.transactionAmount) ?? 0), category: expenseCategories[viewModel.selectedExpenseCategory], date: Date(), imageUri: "", name: viewModel.transactionName, source: viewModel.transactionSource, type: "Expense")
+                        }
+                    }
+                }else{
+                    showAlertInteger = true
+                }
+                
+                
+                
+                      
             }) {
                 Text("Add")
                     .foregroundColor(.white)
@@ -275,7 +288,7 @@ struct AddTransactionView: View {
                     primaryButton: .destructive(
                         Text("Confirm"),
                         action: {
-                            // Add your action logic here to handle the user's confirmation
+                            viewModel.addTransaction(amount: -1*(Int(viewModel.transactionAmount) ?? 0), category: expenseCategories[viewModel.selectedExpenseCategory], date: Date(), imageUri: "", name: viewModel.transactionName, source: viewModel.transactionSource, type: "Expense")
                         }
                     ),
                     secondaryButton: .cancel())}

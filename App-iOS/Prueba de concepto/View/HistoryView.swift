@@ -40,37 +40,29 @@ struct HistoryView: View {
                             VStack {
                                 Spacer(minLength: 40)
                                 List {
-                                    ForEach(viewModel.transactions) { transaction in
+                                    ForEach(viewModel.transactions, id: \.self) { transaction in
                                         NavigationLink(
                                             destination: TransactionDetailView(transaction: transaction)
                                         ) {
                                             VStack(alignment: .leading) {
-                                                if let income = transaction.income{
-                                                    Text(income.source)
+                                                
+                                                    Text(transaction.name)
                                                         .font(.headline)
                                                         .foregroundColor(Color.black)
-                                                    
-                                                    Text("$\(String(format: "%.2f", income.amount))")
+                                                
+                                                    Text(transaction.source)
                                                         .font(.subheadline)
-                                                        .foregroundColor(income.amount >= 0 ? .green : .red)
-                                                    
-                                                    Text(viewModel.formatDate(income.date))
-                                                        .font(.subheadline)
-                                                        .foregroundColor(Color.gray)
-                                                }
-                                                if let expense = transaction.expense {
-                                                    Text(expense.description)
-                                                        .font(.headline)
                                                         .foregroundColor(Color.black)
                                                     
-                                                    Text("$\(String(format: "%.2f", expense.amount))")
+                                                    Text("$\(String(format: "%.2f", transaction.amount))")
                                                         .font(.subheadline)
-                                                        .foregroundColor(expense.amount >= 0 ? .green : .red)
+                                                        .foregroundColor(transaction.amount >= 0 ? .green : .red)
                                                     
-                                                    Text(viewModel.formatDate(expense.date))
+                                                    Text(viewModel.formatDate(transaction.date.dateValue()))
                                                         .font(.subheadline)
                                                         .foregroundColor(Color.gray)
-                                                }
+                                                
+                                                
                                             }
                                         }
                                         .listRowBackground(functions.isDaytime ? Color.white : Color(red: 242/255, green: 242/255, blue: 242/255))
@@ -87,6 +79,7 @@ struct HistoryView: View {
             }
         }.onAppear {
             
+            viewModel.listTransactions()
         }
     }
     

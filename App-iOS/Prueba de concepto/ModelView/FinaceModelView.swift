@@ -24,12 +24,32 @@ final class ContentViewModel: ObservableObject {
             
         }
 
-    func addIncome(source: String,  amount: Int) {
-        
-        }
     
-
-}
+    func addTransaction(amount: Int, category: String, date: Date, imageUri: String, name: String, source: String, type: String){
+        let user = Auth.auth().currentUser
+        if let user = user{
+            let db = Firestore.firestore()
+            let transactionsCollection = db.collection("users").document(user.uid).collection("transactions")
+            // Create a new transaction document with a unique identifier
+                    var ref: DocumentReference? = nil
+                    ref = transactionsCollection.addDocument(data: [
+                        "amount": amount,
+                        "category": category,
+                        "date": date,
+                        "imageUri": imageUri,
+                        "source": source,
+                        "type": type
+                    ]) { error in
+                        if let error = error {
+                            print("Error adding transaction: \(error.localizedDescription)")
+                        } else {
+                            print("Transaction added with ID: \(ref!.documentID)")
+                            self.isAddingTransaction = true
+                        }
+                    }
+                }
+            }
+    }
 
 
 final class MainMenuViewModel: ObservableObject {
@@ -56,10 +76,38 @@ final class HistoryViewModel: ObservableObject {
     }
     
     
-    @Published var incomes = [Income]()
-    
-    func listIncomes() {
-        
+    func listTransactions() {
+        transactions.removeAll()
+        if let user = Auth.auth().currentUser {
+            let db = Firestore.firestore()
+            let transactionsCollection = db.collection("users").document(user.uid).collection("transactions")
+            
+
+            transactionsCollection.getDocuments { (snapshot, error) in
+                guard error == nil else {
+                    print(error!.localizedDescription)
+                    return
+                }
+                
+                if let snapshot = snapshot {
+                    for document in snapshot.documents{
+                            let data = document.data()
+            
+                            let amount = data["amount"] as? Float ?? 0
+                            let category = data["category"] as? String ?? ""
+                        let date = data["date"] as? Timestamp ?? Timestamp()
+                            let imageUri = data["imageUri"] as? String ?? ""
+                            let name = data["name"] as? String ?? ""
+                            let source = data["source"] as? String ?? ""
+                            let transactionId = data["transactionId"] as? String ?? ""
+                            let type = data["type"] as? String ?? ""
+                            
+                            let transaction = Transaction(amount: amount, category: category, date: date, imageUri: imageUri, name: name, source: source, transactionId: transactionId, type: type)
+                            self.transactions.append(transaction)
+                }
+            }
+            }
+        }
     }
 }
 
@@ -216,7 +264,7 @@ final class GlobalFunctions: ObservableObject {
  
         var isDaytime: Bool {
             let hour = Calendar.current.component(.hour, from: Date())
-            return hour >= 6 && hour < 18
+            return hour >= 6 && hour < 24
     }
 }
 
