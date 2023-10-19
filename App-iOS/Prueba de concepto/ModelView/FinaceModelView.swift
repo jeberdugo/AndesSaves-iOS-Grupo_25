@@ -17,11 +17,12 @@ final class ContentViewModel: ObservableObject {
     @Published public var transactionSource = ""
     @Published public var selectedType: Int = 0 // 0 for Income, 1 for Expense
     @Published public var selectedExpenseCategory: Int = 0
-    @Published public var balance: Double = 60.0
+    @Published public var balance: Float = 0
         
     
-    func getBalance() {
-            
+    func getBalance(transactions: [Transaction]) {
+        self.balance = transactions.reduce(0) { $0 + $1.amount }
+        print(self.balance)
         }
 
     
@@ -37,6 +38,7 @@ final class ContentViewModel: ObservableObject {
                         "category": category,
                         "date": date,
                         "imageUri": imageUri,
+                        "name": name,
                         "source": source,
                         "type": type
                     ]) { error in
@@ -158,15 +160,57 @@ final class TagsViewModel: ObservableObject {
         @Published var categoriesWithId = [CategoryWithId]()
         @Published var selectedCategoryId: String?
     
-    func createCategory(name: String) {
-               }
+    
+    func createCategory(name: String){
+        let user = Auth.auth().currentUser
+        if let user = user{
+            let db = Firestore.firestore()
+            let categoriesCollection = db.collection("users").document(user.uid).collection("tags")
+            // Create a new transaction document with a unique identifier
+                    var ref: DocumentReference? = nil
+                    ref = categoriesCollection.addDocument(data: [
+                        "name": name
+                    ]) { error in
+                        if let error = error {
+                            print("Error adding transaction: \(error.localizedDescription)")
+                        } else {
+                            print("Transaction added with ID: \(ref!.documentID)")
+                            
+                        }
+                    }
+                }
+            }
     
     
     func listCategories() {
-                       }
+        categoriesWithId.removeAll()
+        if let user = Auth.auth().currentUser {
+            let db = Firestore.firestore()
+            let categoriesCollection = db.collection("users").document(user.uid).collection("tags")
+            
+
+            categoriesCollection.getDocuments { (snapshot, error) in
+                guard error == nil else {
+                    print(error!.localizedDescription)
+                    return
+                }
+                
+                if let snapshot = snapshot {
+                    for document in snapshot.documents{
+                            let data = document.data()
+            
+                            let name = data["name"] as? String ?? ""
+                            
+                            let category = CategoryWithId(name: name)
+                            self.categoriesWithId.append(category)
+                }
+            }
+            }
+        }
+    }
     
     
-    func deleteCategory(categoryId: String) {
+    func deleteCategory() {
                   
             }
     }
@@ -255,7 +299,14 @@ final class AccountsViewModel: ObservableObject {
 }
 
 final class SettingsViewModel: ObservableObject {
-    
+    func signOut(){
+        do{
+            try Auth.auth().signOut()
+        } catch{
+            print("DEBUG: Failed to sign out with error \(error.localizedDescription)")
+        }
+        
+    }
 }
 
 
@@ -264,7 +315,7 @@ final class GlobalFunctions: ObservableObject {
  
         var isDaytime: Bool {
             let hour = Calendar.current.component(.hour, from: Date())
-            return hour >= 6 && hour < 24
+            return hour >= 6 && hour < 18
     }
 }
 

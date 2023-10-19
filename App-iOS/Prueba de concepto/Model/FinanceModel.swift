@@ -69,7 +69,5 @@ struct Category: Codable {
 }
 
 struct CategoryWithId: Codable {
-    var id: String
     var name: String
-    var user: String
 }

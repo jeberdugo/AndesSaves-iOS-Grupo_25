@@ -100,17 +100,23 @@ struct HistoryView: View {
                     }
                 }.frame(maxWidth: 400, maxHeight: 60)
                 VStack() {
-                    Text("")
-                        .padding()
-                        .foregroundColor(functions.isDaytime ? Color.black : Color.white)
-                        .fontWeight(.bold)
-                        .font(.title2)
-                    Text("$\(String(format: "%.2f", "das"))")
-                        .font(.subheadline)
-                    Text("")
-                        .padding()
-                        .foregroundColor(Color.gray)
-                    // agragar foto de la transaccion
+                    VStack() {
+                            Text(transaction.name)
+                                .padding()
+                                .foregroundColor(Color.black)
+                                .fontWeight(.bold)
+                                .font(.headline)
+                            Text(transaction.source)
+                                .font(.subheadline)
+                                .foregroundColor(Color.black)
+                            Text("$\(String(format: "%.2f", transaction.amount))")
+                                .font(.subheadline)
+                                .foregroundColor(transaction.amount >= 0 ? .green : .red)
+                            Text("\(transaction.date.dateValue())")
+                                .padding()
+                                .foregroundColor(Color.gray)
+                                    // agragar foto de la transaccion
+                                }
                 }
                 Spacer()
             }

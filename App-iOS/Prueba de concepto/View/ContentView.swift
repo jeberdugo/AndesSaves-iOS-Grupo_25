@@ -142,9 +142,8 @@ struct ContentView: View {
                 }
             }
         }.onAppear{
-            Task {
-                await viewModel.getBalance()
-            }
+                History.listTransactions()
+                viewModel.getBalance(transactions: History.transactions)
         }
         .navigationBarBackButtonHidden(/*@START_MENU_TOKEN@*/true/*@END_MENU_TOKEN@*/)
         }
@@ -258,7 +257,7 @@ struct AddTransactionView: View {
                         viewModel.addTransaction(amount: Int(viewModel.transactionAmount) ?? 0, category: "Income", date: Date(), imageUri: "", name: viewModel.transactionName, source: viewModel.transactionSource, type: "Income")
                     }
                     else{
-                        if viewModel.balance-(Double(viewModel.transactionAmount) ?? 0.0) < 0 {
+                        if viewModel.balance-(Float(viewModel.transactionAmount) ?? 0.0) < 0 {
                             showAlert = true
                         }
                         else{

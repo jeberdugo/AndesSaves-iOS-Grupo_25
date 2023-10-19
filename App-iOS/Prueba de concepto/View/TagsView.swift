@@ -73,7 +73,7 @@ import SwiftUI
                             if viewModel.categoriesWithId[index].name != "Add" {
                                 if viewModel.isEditMode {
                                     Button(action: {
-                                      viewModel.deleteCategory(categoryId: viewModel.categoriesWithId[index].id)
+                                        viewModel.deleteCategory()
                                        viewModel.listCategories()
                                     }) {
                                         Image(systemName: "minus.circle.fill")
@@ -100,10 +100,10 @@ import SwiftUI
                     }
                 }
                 .onAppear {
-
-                    
                     viewModel.listCategories()
-                            }
+                    let category = CategoryWithId(name: "Add")
+                    viewModel.categoriesWithId.append(category)
+                }
                 
                 Spacer(minLength: 30)
                 .padding()
