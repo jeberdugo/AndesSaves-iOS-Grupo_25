@@ -46,6 +46,7 @@ struct ContentView: View {
                             .foregroundColor(.white)
                         Button(action: {
                             CategoryView.listCategories()
+                            print(CategoryView.expenseCategories.count)
                             viewModel.isAddingTransaction.toggle()
                         }) {
                             Text("Add Transaction")
@@ -200,8 +201,8 @@ struct AddTransactionView: View {
                 if viewModel.selectedType == 1 {
                     Section(header: Text("Expense Category")) {
                         Picker("Select Category", selection: $viewModel.selectedExpenseCategory) {
-                            ForEach(0..<CategoryView.expenseCategories.count) { index in
-                                Text(CategoryView.expenseCategories[index])
+                            ForEach(CategoryView.expenseCategories, id: \.self) { category in
+                                Text(category)
                             }
                         }
                         .pickerStyle(SegmentedPickerStyle())

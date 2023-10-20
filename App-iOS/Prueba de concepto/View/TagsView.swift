@@ -132,6 +132,7 @@ struct AddTagDialog: View {
     @StateObject private var viewModel = TagsViewModel()
     @StateObject private var functions = GlobalFunctions()
     @StateObject private var loginViewModel = LoginViewModel()
+    @State private var showAlert = false
     
     var addTagAction: (String) -> Void // Cierre para agregar una nueva etiqueta
     
@@ -166,11 +167,12 @@ struct AddTagDialog: View {
                 .padding()
                 Spacer()
                 Button(action: {
-                    // Llama a la función para agregar la nueva etiqueta
-                    viewModel.createCategory(name: tagName)
-                    viewModel.listCategories()
-                    // Cierra el diálogo
-                    isPresented = false
+                        // Llama a la función para agregar la nueva etiqueta
+                        viewModel.createCategory(name: tagName)
+                        viewModel.listCategories()
+                        // Cierra el diálogo
+                        isPresented = false
+                    
                 }) {
                     Text("Save")
                         .foregroundColor(.white)
@@ -180,6 +182,13 @@ struct AddTagDialog: View {
                         .cornerRadius(10)
                 }
                 .padding()
+                .alert(isPresented: $showAlert) {
+                    Alert(
+                        title: Text("Maximum number of tags exceeded"),
+                        message: Text("Please delete a tag before adding a new one"),
+                        dismissButton: .default(Text("OK"))
+                    )
+                }
                 
             }
             .padding()

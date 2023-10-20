@@ -188,7 +188,7 @@ final class TagsViewModel: ObservableObject {
     
     func listCategories() {
         categoriesWithId.removeAll()
-        expenseCategories.removeAll()
+        self.expenseCategories.removeAll()
         if let user = Auth.auth().currentUser {
             let db = Firestore.firestore()
             let categoriesCollection = db.collection("users").document(user.uid).collection("tags")
@@ -241,7 +241,7 @@ final class TagsViewModel: ObservableObject {
         }
     }
     
-    }
+}
 
 
 final class SummaryViewModel: ObservableObject {
