@@ -67,9 +67,7 @@ final class MainMenuViewModel: ObservableObject {
 
 
 final class HistoryViewModel: ObservableObject {
-    @Published public var transactions: [Transaction] = [
-        Transaction(amount: 50, category: "Income", date: Timestamp(), imageUri: "", name: "ejemplo", source: "ej", transactionId: "", type: "Income")
-    ]
+    @Published public var transactions: [Transaction] = []
     let currentDateTime = Date()
     
     // Función para formatear la fecha y hora
@@ -103,7 +101,7 @@ final class HistoryViewModel: ObservableObject {
                             let imageUri = data["imageUri"] as? String ?? ""
                             let name = data["name"] as? String ?? ""
                             let source = data["source"] as? String ?? ""
-                            let transactionId = data["transactionId"] as? String ?? ""
+                            let transactionId = document.documentID
                             let type = data["type"] as? String ?? ""
                             
                             let transaction = Transaction(amount: amount, category: category, date: date, imageUri: imageUri, name: name, source: source, transactionId: transactionId, type: type)
@@ -113,6 +111,32 @@ final class HistoryViewModel: ObservableObject {
             }
         }
     }
+    
+    
+    func deleteTransaction(transactionId: String) {
+        if let user = Auth.auth().currentUser {
+            let db = Firestore.firestore()
+            let transactionsCollection = db.collection("users").document(user.uid).collection("transactions")
+
+            // Get a reference to the category document you want to delete
+            let transactionDocument = transactionsCollection.document(transactionId)
+
+            // Delete the category document
+            transactionDocument.delete { error in
+                if let error = error {
+                    print("Error deleting category: \(error.localizedDescription)")
+                } else {
+                    print("Category deleted successfully")
+                    
+                    // Optionally, remove the deleted category from your local array
+                    if let index = self.transactions.firstIndex(where: { $0.transactionId == transactionId }) {
+                        self.transactions.remove(at: index)
+                    }
+                }
+            }
+        }
+    }
+    
 }
 
 
