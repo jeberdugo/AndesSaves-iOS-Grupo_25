@@ -67,7 +67,9 @@ final class MainMenuViewModel: ObservableObject {
 
 
 final class HistoryViewModel: ObservableObject {
-    @Published public var transactions: [Transaction] = [ ]
+    @Published public var transactions: [Transaction] = [
+        Transaction(amount: 50, category: "Income", date: Timestamp(), imageUri: "", name: "ejemplo", source: "ej", transactionId: "", type: "Income")
+    ]
     let currentDateTime = Date()
     
     // Función para formatear la fecha y hora
@@ -143,6 +145,8 @@ final class TagsViewModel: ObservableObject {
             TagsItem(title: "Add", imageName: "Add")
         ]
     
+    @Published var expenseCategories:  [String] = []
+    
         @Published var count = 0
 
         @Published var isEditMode = false
@@ -184,6 +188,7 @@ final class TagsViewModel: ObservableObject {
     
     func listCategories() {
         categoriesWithId.removeAll()
+        expenseCategories.removeAll()
         if let user = Auth.auth().currentUser {
             let db = Firestore.firestore()
             let categoriesCollection = db.collection("users").document(user.uid).collection("tags")
@@ -200,9 +205,11 @@ final class TagsViewModel: ObservableObject {
                             let data = document.data()
             
                             let name = data["name"] as? String ?? ""
+                            let categoryId = document.documentID
                             
-                            let category = CategoryWithId(name: name)
+                            let category = CategoryWithId(name: name, categoryId: categoryId )
                             self.categoriesWithId.append(category)
+                            self.expenseCategories.append(name)
                 }
             }
             }
@@ -210,9 +217,30 @@ final class TagsViewModel: ObservableObject {
     }
     
     
-    func deleteCategory() {
-                  
+    func deleteCategory(categoryId: String) {
+        if let user = Auth.auth().currentUser {
+            let db = Firestore.firestore()
+            let categoriesCollection = db.collection("users").document(user.uid).collection("tags")
+
+            // Get a reference to the category document you want to delete
+            let categoryDocument = categoriesCollection.document(categoryId)
+
+            // Delete the category document
+            categoryDocument.delete { error in
+                if let error = error {
+                    print("Error deleting category: \(error.localizedDescription)")
+                } else {
+                    print("Category deleted successfully")
+                    
+                    // Optionally, remove the deleted category from your local array
+                    if let index = self.categoriesWithId.firstIndex(where: { $0.categoryId == categoryId }) {
+                        self.categoriesWithId.remove(at: index)
+                    }
+                }
             }
+        }
+    }
+    
     }
 
 

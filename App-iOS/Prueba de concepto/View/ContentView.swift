@@ -24,7 +24,7 @@ struct ContentView: View {
     @StateObject private var viewModel = ContentViewModel()
     @StateObject private var functions = GlobalFunctions()
     @StateObject private var History = HistoryViewModel()
-    let expenseCategories = ["Food", "Transport", "House", "Others"]
+    @StateObject private var CategoryView = TagsViewModel()
     
     var body: some View {
         NavigationView {
@@ -44,8 +44,8 @@ struct ContentView: View {
                         Text("$\(String(format: "%.2f", viewModel.balance))")
                             .font(.largeTitle)
                             .foregroundColor(.white)
-                        
                         Button(action: {
+                            CategoryView.listCategories()
                             viewModel.isAddingTransaction.toggle()
                         }) {
                             Text("Add Transaction")
@@ -133,6 +133,7 @@ struct ContentView: View {
                                 .environmentObject(viewModel)
                                 .environmentObject(functions)
                                 .environmentObject(History)
+                                .environmentObject(CategoryView)
 
                         }
                     }
@@ -142,7 +143,6 @@ struct ContentView: View {
                 }
             }
         }.onAppear{
-                History.listTransactions()
                 viewModel.getBalance(transactions: History.transactions)
         }
         .navigationBarBackButtonHidden(/*@START_MENU_TOKEN@*/true/*@END_MENU_TOKEN@*/)
@@ -154,12 +154,12 @@ struct AddTransactionView: View {
     @EnvironmentObject var viewModel: ContentViewModel
     @EnvironmentObject var functions: GlobalFunctions
     @EnvironmentObject var historyViewModel: HistoryViewModel
+    @EnvironmentObject var CategoryView: TagsViewModel
     @State private var showAlert = false
     @State private var showAlertInteger = false
     @State private var showImagePicker = false
     @State private var image: Image? 
     @State private var isShowingImage = false
-    let expenseCategories = ["Food", "Transport", "House", "Others"]
     
     var body: some View {
         ZStack() {
@@ -200,8 +200,8 @@ struct AddTransactionView: View {
                 if viewModel.selectedType == 1 {
                     Section(header: Text("Expense Category")) {
                         Picker("Select Category", selection: $viewModel.selectedExpenseCategory) {
-                            ForEach(0..<expenseCategories.count) { index in
-                                Text(expenseCategories[index])
+                            ForEach(0..<CategoryView.expenseCategories.count) { index in
+                                Text(CategoryView.expenseCategories[index])
                             }
                         }
                         .pickerStyle(SegmentedPickerStyle())
@@ -261,7 +261,7 @@ struct AddTransactionView: View {
                             showAlert = true
                         }
                         else{
-                            viewModel.addTransaction(amount: -1*(Int(viewModel.transactionAmount) ?? 0), category: expenseCategories[viewModel.selectedExpenseCategory], date: Date(), imageUri: "", name: viewModel.transactionName, source: viewModel.transactionSource, type: "Expense")
+                            viewModel.addTransaction(amount: -1*(Int(viewModel.transactionAmount) ?? 0), category: CategoryView.expenseCategories[viewModel.selectedExpenseCategory], date: Date(), imageUri: "", name: viewModel.transactionName, source: viewModel.transactionSource, type: "Expense")
                         }
                     }
                 }else{
@@ -287,7 +287,7 @@ struct AddTransactionView: View {
                     primaryButton: .destructive(
                         Text("Confirm"),
                         action: {
-                            viewModel.addTransaction(amount: -1*(Int(viewModel.transactionAmount) ?? 0), category: expenseCategories[viewModel.selectedExpenseCategory], date: Date(), imageUri: "", name: viewModel.transactionName, source: viewModel.transactionSource, type: "Expense")
+                            viewModel.addTransaction(amount: -1*(Int(viewModel.transactionAmount) ?? 0), category: CategoryView.expenseCategories[viewModel.selectedExpenseCategory], date: Date(), imageUri: "", name: viewModel.transactionName, source: viewModel.transactionSource, type: "Expense")
                         }
                     ),
                     secondaryButton: .cancel())}

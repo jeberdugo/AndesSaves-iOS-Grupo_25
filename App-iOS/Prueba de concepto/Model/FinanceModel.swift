@@ -70,4 +70,5 @@ struct Category: Codable {
 
 struct CategoryWithId: Codable {
     var name: String
+    var categoryId: String
 }
