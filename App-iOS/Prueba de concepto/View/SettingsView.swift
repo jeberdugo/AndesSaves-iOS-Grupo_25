@@ -27,50 +27,60 @@ struct SettingsView: View {
         
         Spacer()
         
-        VStack {
-            VStack {
-                HStack {
-                    Image(systemName: "dollarsign.circle")
-                        .foregroundColor(.blue)
-                        .padding(.leading, 16)
-                        .frame(width: 30, height: 30)
+        List{
+            Section{
+                HStack{
+                    Text("JS")
+                        .font(.title)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .frame(width: 72, height: 72)
+                        .background(Color(.systemGray3))
+                        .clipShape(Circle())
+                    
+                    
+                    VStack(alignment: .leading, spacing: 7){
+                        Text("Nombre usuario")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .padding(.top, 4)
+                        
+                        Text("Correo Usuario")
+                            .font(.footnote)
+                            .accentColor(.gray)
+                    }
+                }
+            }
+            
+            Section("General"){
+                HStack(spacing: 12){
+                    Image(systemName: "gear.circle.fill")
+                        .imageScale(.small)
+                        .foregroundColor(.gray)
+                        .font(.title)
+                        .frame(width: 20, height: 20)
                     
                     SectionView(title: "Currency")
-                        .font(.headline)
-                        .padding(.leading, 16)
-                        .foregroundColor(functions.isDaytime ? Color.black : Color.white)
+                        .font(.subheadline)
+                        .foregroundColor(.black)
                     
                     Spacer()
+                    
+                    Text("2.0.0")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
                 }
                 
-                Divider()
-                
-                HStack {
-                    Image(systemName: "globe")
-                        .foregroundColor(.blue)
-                        .padding(.leading, 16)
-                        .frame(width: 30, height: 30)
-                    
-                    SectionView(title: "Language")
-                        .font(.headline)
-                        .padding(.leading, 16)
-                        .foregroundColor(functions.isDaytime ? Color.black : Color.white)
-                    
-                    Spacer()
-                }
-                
-                Divider()
-                
-                HStack {
-                    Image(systemName: "bell")
-                        .foregroundColor(.blue)
-                        .padding(.leading, 16)
-                        .frame(width: 30, height: 30)
+                HStack(spacing: 12){
+                    Image(systemName: "bell.circle.fill")
+                        .imageScale(.small)
+                        .foregroundColor(.gray)
+                        .font(.title)
+                        .frame(width: 20, height: 20)
                     
                     SectionView(title: "Notifications")
-                        .font(.headline)
-                        .padding(.leading, 16)
-                        .foregroundColor(functions.isDaytime ? Color.black : Color.white)
+                        .font(.subheadline)
+                        .foregroundColor(.black)
                     
                     Spacer()
                     
@@ -87,9 +97,44 @@ struct SettingsView: View {
                         }
                 }
             }
-            Spacer()
+            
+            Section("Accounts"){
+                    Button{
+                        print("Sign Out..")
+                    }label: {
+                        HStack(spacing: 12){
+                        Image(systemName: "arrow.left.circle.fill")
+                            .foregroundColor(.red)
+                            .imageScale(.small)
+                            .font(.title)
+                            .frame(width: 20, height: 20)
+                        
+                        SectionView(title: "Sign Out")
+                            .font(.subheadline)
+                            .foregroundColor(.black)
+                    }
+                }
+                
+                
+                    Button{
+                        print("Delete Account..")
+                    }label: {
+                        HStack(spacing: 12){
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.red)
+                            .imageScale(.small)
+                            .font(.title)
+                            .frame(width: 20, height: 20)
+                        
+                        SectionView(title: "Delete Account")
+                            .font(.subheadline)
+                            .foregroundColor(.red)
+                    }
+                }
+                
+            }
         }
-        .background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
+        
     }
 }
 
