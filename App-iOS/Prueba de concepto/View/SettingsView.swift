@@ -11,7 +11,7 @@ import UserNotifications
 // Vista para "Settings"
 struct SettingsView: View {
     @StateObject private var functions = GlobalFunctions()
-    @State private var notificationsEnabled = false
+    @StateObject private var viewModel = SettingsViewModel()
     
     var body: some View {
         ZStack() {
@@ -30,22 +30,20 @@ struct SettingsView: View {
         List{
             Section{
                 HStack{
-                    Text("JS")
-                        .font(.title)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                        .frame(width: 72, height: 72)
-                        .background(Color(.systemGray3))
-                        .clipShape(Circle())
                     
+                    Image(systemName: "person.circle.fill")
+                        .imageScale(.large)
+                        .foregroundColor(.gray)
+                        .font(.title)
+                        .frame(width: 72, height: 72)
                     
                     VStack(alignment: .leading, spacing: 7){
-                        Text("Nombre usuario")
+                        Text(viewModel.name)
                             .font(.headline)
                             .fontWeight(.semibold)
                             .padding(.top, 4)
                         
-                        Text("Correo Usuario")
+                        Text(viewModel.email)
                             .font(.footnote)
                             .accentColor(.gray)
                     }
@@ -69,6 +67,7 @@ struct SettingsView: View {
                     Text("2.0.0")
                         .font(.subheadline)
                         .foregroundColor(.gray)
+                        .padding(5)
                 }
                 
                 HStack(spacing: 12){
@@ -84,10 +83,10 @@ struct SettingsView: View {
                     
                     Spacer()
                     
-                    Toggle("", isOn: $notificationsEnabled) // Add a Toggle switch
+                    Toggle("", isOn: $viewModel.notificationsEnabled) // Add a Toggle switch
                         .padding(.trailing, 16)
                         .foregroundColor(.blue)
-                        .onChange(of: notificationsEnabled) { newValue in
+                        .onChange(of: viewModel.notificationsEnabled) { newValue in
                             // Handle the toggle state change here
                             if newValue {
                                 requestNotificationAuthorization()
@@ -99,40 +98,68 @@ struct SettingsView: View {
             }
             
             Section("Accounts"){
-                    Button{
-                        print("Sign Out..")
-                    }label: {
-                        HStack(spacing: 12){
-                        Image(systemName: "arrow.left.circle.fill")
-                            .foregroundColor(.red)
-                            .imageScale(.small)
-                            .font(.title)
-                            .frame(width: 20, height: 20)
-                        
-                        SectionView(title: "Sign Out")
-                            .font(.subheadline)
-                            .foregroundColor(.black)
-                    }
-                }
                 
-                
-                    Button{
-                        print("Delete Account..")
-                    }label: {
-                        HStack(spacing: 12){
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.red)
-                            .imageScale(.small)
-                            .font(.title)
-                            .frame(width: 20, height: 20)
-                        
-                        SectionView(title: "Delete Account")
-                            .font(.subheadline)
-                            .foregroundColor(.red)
-                    }
-                }
-                
+                        Button{
+                            print("Sign Out..")
+                            viewModel.signOut()
+                            viewModel.isLoggingOut.toggle()
+                        }label: {
+                            HStack(spacing: 12){
+                                Image(systemName: "arrow.left.circle.fill")
+                                    .foregroundColor(.red)
+                                    .imageScale(.small)
+                                    .font(.title)
+                                    .frame(width: 20, height: 20)
+                                
+                                SectionView(title: "Sign Out")
+                                    .font(.subheadline)
+                                    .foregroundColor(.black)
+                            }
+                        }
+                        .fullScreenCover(isPresented: $viewModel.isLoggingOut) {
+                                    LoginView()
+                                }
+
+                    
+                /*
+                        Button{
+                            viewModel.isShowAlarm = true
+                            
+                        }label: {
+                            HStack(spacing: 12){
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.red)
+                                    .imageScale(.small)
+                                    .font(.title)
+                                    .frame(width: 20, height: 20)
+                                
+                                SectionView(title: "Delete Account")
+                                    .font(.subheadline)
+                                    .foregroundColor(.red)
+                            }
+                        }
+                        .fullScreenCover(isPresented: $viewModel.isDeletingAccount) {
+                                    LoginView()
+                                }
+                    .alert(isPresented: $viewModel.isShowAlarm) {
+                        Alert(
+                            title: Text("Warning: Delete Account"),
+                            message: Text("are you sure you want to delete your account permantly?"),
+                            primaryButton: .destructive(
+                                Text("Confirm"),
+                                action: {
+                                    print("Delete Account..")
+                                    viewModel.deleteAccount()
+                                    viewModel.isDeletingAccount.toggle()
+                                }
+                            ),
+                            secondaryButton: .cancel())}
+                 */
             }
+        }
+        .onAppear {
+            
+            viewModel.fetchUser()
         }
         
     }

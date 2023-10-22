@@ -18,6 +18,8 @@ final class ContentViewModel: ObservableObject {
     @Published public var selectedType: Int = 0 // 0 for Income, 1 for Expense
     @Published public var selectedExpenseCategory: Int = 0
     @Published public var balance: Float = 0
+    @Published public var storedImage: UIImage?
+    
         
     
     func getBalance(transactions: [Transaction]) {
@@ -51,7 +53,34 @@ final class ContentViewModel: ObservableObject {
                     }
                 }
             }
+    
+    
+    func saveImageFromDirectory(fileName: String){
+        
+        let dir_path = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("transactions", isDirectory: true)
+        
+        if !FileManager.default.fileExists(atPath: dir_path.path){
+            do{
+                try FileManager.default.createDirectory(atPath: dir_path.path, withIntermediateDirectories: true, attributes: nil)
+                print("Succesfully created")
+            }
+            catch{
+                print("Error creating user directory: " + error.localizedDescription)
+            }
+        }
+        
+        let img_dir = dir_path.appendingPathComponent(fileName)
+        
+        do{
+            try storedImage?.pngData()?.write(to: img_dir)
+            print("Image saved")
+        }
+        catch{
+            print("Some error: " + error.localizedDescription)
+        }
     }
+    
+}
 
 
 final class MainMenuViewModel: ObservableObject {
@@ -135,6 +164,14 @@ final class HistoryViewModel: ObservableObject {
                 }
             }
         }
+    }
+    
+    func loadImageFromDirectory(){
+        
+    }
+    
+    func deleteImageFromDirectory(){
+        
     }
     
 }
@@ -351,13 +388,56 @@ final class AccountsViewModel: ObservableObject {
 }
 
 final class SettingsViewModel: ObservableObject {
+    @Published public var isLoggingOut = false
+    @Published public var isDeletingAccount = false
+    @Published public var isShowAlarm = false
+    @AppStorage("notificationsEnabled") var notificationsEnabled = false
+    
+    @Published public var balance: Float = 0
+    @Published public var email = ""
+    @Published public var name  = ""
+    @Published public var phone = ""
+    @Published public var userId = ""
+    
     func signOut(){
         do{
             try Auth.auth().signOut()
         } catch{
             print("DEBUG: Failed to sign out with error \(error.localizedDescription)")
         }
+    }
+    
+    func deleteAccount(){
         
+    }
+    
+    func fetchUser(){
+        if let user = Auth.auth().currentUser {
+            let db = Firestore.firestore()
+            let usersCollection = db.collection("users")
+            
+
+            usersCollection.getDocuments { (snapshot, error) in
+                guard error == nil else {
+                    print(error!.localizedDescription)
+                    return
+                }
+                
+                if let snapshot = snapshot {
+                    for document in snapshot.documents{
+                            let data = document.data()
+                            let id = data["userId"] as? String ?? ""
+                        if  id == user.uid{
+                            self.balance = data["balance"] as? Float ?? 0
+                            self.email = data["email"] as? String ?? ""
+                            self.name = data["name"] as? String ?? ""
+                            self.phone = data["phone"] as? String ?? ""
+                            self.userId = data["userId"] as? String ?? ""
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

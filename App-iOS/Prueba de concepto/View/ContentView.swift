@@ -256,6 +256,9 @@ struct AddTransactionView: View {
                     // Add action logic here to save the transaction
                     if viewModel.selectedType == 0{
                         viewModel.addTransaction(amount: Int(viewModel.transactionAmount) ?? 0, category: "Income", date: Date(), imageUri: "", name: viewModel.transactionName, source: viewModel.transactionSource, type: "Income")
+                        if image != nil{
+                            viewModel.saveImageFromDirectory(fileName: viewModel.transactionName)
+                        }
                     }
                     else{
                         if viewModel.balance-(Float(viewModel.transactionAmount) ?? 0.0) < 0 {
@@ -263,6 +266,9 @@ struct AddTransactionView: View {
                         }
                         else{
                             viewModel.addTransaction(amount: -1*(Int(viewModel.transactionAmount) ?? 0), category: CategoryView.expenseCategories[viewModel.selectedExpenseCategory], date: Date(), imageUri: "", name: viewModel.transactionName, source: viewModel.transactionSource, type: "Expense")
+                            if image != nil{
+                                viewModel.saveImageFromDirectory(fileName: viewModel.transactionName)
+                            }
                         }
                     }
                 }else{
@@ -289,6 +295,7 @@ struct AddTransactionView: View {
                         Text("Confirm"),
                         action: {
                             viewModel.addTransaction(amount: -1*(Int(viewModel.transactionAmount) ?? 0), category: CategoryView.expenseCategories[viewModel.selectedExpenseCategory], date: Date(), imageUri: "", name: viewModel.transactionName, source: viewModel.transactionSource, type: "Expense")
+                            viewModel.saveImageFromDirectory(fileName: viewModel.transactionName)
                         }
                     ),
                     secondaryButton: .cancel())}
@@ -298,6 +305,7 @@ struct AddTransactionView: View {
         // Camera sheet
         .sheet(isPresented: $showImagePicker) {
             ImagePicker(image: $image, isShowingImage: $isShowingImage)
+                .environmentObject(viewModel)
         }
     }
 }
@@ -308,17 +316,22 @@ struct ImagePicker: UIViewControllerRepresentable {
     @Binding var image: Image?
     @Binding var isShowingImage: Bool
     @Environment(\.presentationMode) var presentationMode
+    @StateObject private var viewModel = ContentViewModel()
     
     class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
         let parent: ImagePicker
+        let viewModel: ContentViewModel
         
         init(_ parent: ImagePicker) {
             self.parent = parent
+            self.viewModel = ContentViewModel()
         }
         
         func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
             if let uiImage = info[.originalImage] as? UIImage {
                 parent.image = Image(uiImage: uiImage)
+                let uiImage = info[.originalImage] as? UIImage
+                viewModel.storedImage = info[.originalImage] as? UIImage
                 parent.isShowingImage = true
             }
             parent.presentationMode.wrappedValue.dismiss()

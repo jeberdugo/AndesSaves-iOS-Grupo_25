@@ -33,6 +33,7 @@ struct RegisterView: View {
                         TextField("Email", text: $email)
                             .textFieldStyle(PlainTextFieldStyle())
                             .padding(.horizontal, 10)
+                            .autocapitalization(.none)
                     }
                     .padding()
                     

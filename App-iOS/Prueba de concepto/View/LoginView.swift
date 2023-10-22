@@ -35,6 +35,7 @@ struct LoginView: View {
                     TextField("Email", text: $email)
                         .textFieldStyle(PlainTextFieldStyle()) // Use PlainTextFieldStyle to remove the default border
                         .padding(.horizontal, 10) // Adjust the horizontal padding as needed
+                        .autocapitalization(.none)
                 }
                 .padding()
                 
