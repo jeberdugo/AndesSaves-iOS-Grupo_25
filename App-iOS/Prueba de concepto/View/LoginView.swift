@@ -70,21 +70,22 @@ struct LoginView: View {
                         .cornerRadius(10)
                 }
                 .padding()
-                .alert(item: $viewModel.alertItem) { alertItem in
-                                Alert(title: Text("Error"), message: Text(alertItem.message), dismissButton: .default(Text("OK")))
-                            }
+                .alert(isPresented: $viewModel.isShowAlarm) {
+                          Alert(title: Text("Registration"), message: Text(viewModel.message), dismissButton: .default(Text("OK")))
+                }
                 
                 NavigationLink(
                     destination: ContentView(),
                     isActive: $showNextView
                 ){
                     EmptyView()
-                }
+                }.navigationViewStyle(StackNavigationViewStyle())
+                
                 NavigationLink(destination: RegisterView()) {
                     Text("Don't have an account? Click here")
                         .foregroundColor(Color.blue) // Set your desired text color
                         .underline() // Add an underline to the text
-                }
+                }.navigationViewStyle(StackNavigationViewStyle())
             }
             .padding()
             Spacer()

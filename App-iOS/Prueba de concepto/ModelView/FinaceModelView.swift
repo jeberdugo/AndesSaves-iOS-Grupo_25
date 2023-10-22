@@ -20,13 +20,6 @@ final class ContentViewModel: ObservableObject {
     @Published public var selectedExpenseCategory: Int = 0
     @Published public var balance: Float = 0
     @Published public var storedImage: UIImage?
-    
-        
-    
-    func getBalance(transactions: [Transaction]) {
-        self.balance = transactions.reduce(0) { $0 + $1.amount }
-        print(self.balance)
-        }
 
     
     func addTransaction(amount: Int, category: String, date: Date, imageUri: String, name: String, source: String, type: String, image: UIImage?){
@@ -48,6 +41,8 @@ final class ContentViewModel: ObservableObject {
                         if let error = error {
                             print("Error adding transaction: \(error.localizedDescription)")
                         } else {
+                            self.balance = self.balance + Float(amount)
+                            self.updateBalance(transactionId: ref!.documentID, newBalance: self.balance)
                             print("Transaction added with ID: \(ref!.documentID)")
                             if image != nil{
                                 //self.saveImageFromDirectory(fileName: ref!.documentID, image: image)
@@ -58,6 +53,25 @@ final class ContentViewModel: ObservableObject {
                     }
                 }
             }
+    
+    func updateBalance(transactionId: String, newBalance: Float) {
+        if let user = Auth.auth().currentUser {
+            let db = Firestore.firestore()
+            let userDocument = db.collection("users").document(user.uid)
+
+            userDocument.updateData([
+                "balance": newBalance
+            ]) { error in
+                if let error = error {
+                    // Handle the error here
+                    print("Error updating balance: \(error.localizedDescription)")
+                } else {
+                    // Update successful
+                    print("Balance updated successfully")
+                }
+            }
+        }
+    }
     
     
     func saveImageFromDirectory(fileName: String, image: UIImage?){
@@ -442,14 +456,23 @@ final class RegisterViewModel: ObservableObject {
 final class LoginViewModel: ObservableObject {
 
     @Published var isLoggedIn = false
+    @Published var isShowAlarm = false
     @Published var alertItem: AlertItem?
     @Published var token = ""
     @Published var user = ""
+    @Published var message = ""
     
     func login(email: String, password: String ) {
+        self.isShowAlarm = false
         Auth.auth().signIn(withEmail: email, password: password){ result, error in
             if error != nil {
                 print(error!.localizedDescription)
+                if error!.localizedDescription != "An internal error has occurred, print and inspect the error details for more information."{
+                    self.message = error!.localizedDescription
+                }else{
+                    self.message = "The password or email is incorrect"
+                }
+                self.isShowAlarm = true
             } else {
                 self.isLoggedIn = true
             }

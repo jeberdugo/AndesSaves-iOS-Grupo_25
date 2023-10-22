@@ -11,14 +11,6 @@ import UserNotifications
 
 
 
-struct FinanceApp: App {
-    var body: some Scene {
-        WindowGroup {
-            LoginView()
-        }
-    }
-}
-
 struct ContentView: View {
     @State private var showAlert = false
     @StateObject private var viewModel = ContentViewModel()
@@ -143,8 +135,6 @@ struct ContentView: View {
                     
                 }
             }
-        }.onAppear{
-                viewModel.getBalance(transactions: History.transactions)
         }
         .navigationBarBackButtonHidden(/*@START_MENU_TOKEN@*/true/*@END_MENU_TOKEN@*/)
         }
