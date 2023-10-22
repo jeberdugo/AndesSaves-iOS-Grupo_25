@@ -93,6 +93,7 @@ struct HistoryView: View {
     struct TransactionDetailView: View {
         let transaction: Transaction
         @StateObject private var functions = GlobalFunctions()
+        @StateObject private var viewModel = HistoryViewModel()
         
         var body: some View {
             VStack(){
@@ -121,10 +122,24 @@ struct HistoryView: View {
                             Text("\(transaction.date.dateValue())")
                                 .padding()
                                 .foregroundColor(Color.gray)
-                                    // agragar foto de la transaccion
-                                }
+                          
+                        if let image = viewModel.storedImage {
+                            Image(uiImage: image)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 300, height: 350) // Set the size as per your requirements
+                        } else {
+                            Text("No Image Available")
+                        }
+                                
+                        }
                 }
                 Spacer()
+            }
+            .onAppear {
+                
+                //viewModel.loadImageFromDirectory(fileName: transaction.name)
+                viewModel.retrieveImage(fileName: transaction.transactionId)
             }
             .background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
         }

@@ -161,6 +161,7 @@ struct AddTransactionView: View {
     @State private var showImagePicker = false
     @State private var image: Image? 
     @State private var isShowingImage = false
+    @State private var uiimage: UIImage?
     
     var body: some View {
         ZStack() {
@@ -255,20 +256,14 @@ struct AddTransactionView: View {
                 if let amount = Int(viewModel.transactionAmount), amount > 0{
                     // Add action logic here to save the transaction
                     if viewModel.selectedType == 0{
-                        viewModel.addTransaction(amount: Int(viewModel.transactionAmount) ?? 0, category: "Income", date: Date(), imageUri: "", name: viewModel.transactionName, source: viewModel.transactionSource, type: "Income")
-                        if image != nil{
-                            viewModel.saveImageFromDirectory(fileName: viewModel.transactionName)
-                        }
+                        viewModel.addTransaction(amount: Int(viewModel.transactionAmount) ?? 0, category: "Income", date: Date(), imageUri: "", name: viewModel.transactionName, source: viewModel.transactionSource, type: "Income", image:uiimage)
                     }
                     else{
                         if viewModel.balance-(Float(viewModel.transactionAmount) ?? 0.0) < 0 {
                             showAlert = true
                         }
                         else{
-                            viewModel.addTransaction(amount: -1*(Int(viewModel.transactionAmount) ?? 0), category: CategoryView.expenseCategories[viewModel.selectedExpenseCategory], date: Date(), imageUri: "", name: viewModel.transactionName, source: viewModel.transactionSource, type: "Expense")
-                            if image != nil{
-                                viewModel.saveImageFromDirectory(fileName: viewModel.transactionName)
-                            }
+                            viewModel.addTransaction(amount: -1*(Int(viewModel.transactionAmount) ?? 0), category: CategoryView.expenseCategories[viewModel.selectedExpenseCategory], date: Date(), imageUri: "", name: viewModel.transactionName, source: viewModel.transactionSource, type: "Expense", image:uiimage)
                         }
                     }
                 }else{
@@ -294,8 +289,7 @@ struct AddTransactionView: View {
                     primaryButton: .destructive(
                         Text("Confirm"),
                         action: {
-                            viewModel.addTransaction(amount: -1*(Int(viewModel.transactionAmount) ?? 0), category: CategoryView.expenseCategories[viewModel.selectedExpenseCategory], date: Date(), imageUri: "", name: viewModel.transactionName, source: viewModel.transactionSource, type: "Expense")
-                            viewModel.saveImageFromDirectory(fileName: viewModel.transactionName)
+                            viewModel.addTransaction(amount: -1*(Int(viewModel.transactionAmount) ?? 0), category: CategoryView.expenseCategories[viewModel.selectedExpenseCategory], date: Date(), imageUri: "", name: viewModel.transactionName, source: viewModel.transactionSource, type: "Expense", image:uiimage)
                         }
                     ),
                     secondaryButton: .cancel())}
@@ -304,7 +298,7 @@ struct AddTransactionView: View {
         
         // Camera sheet
         .sheet(isPresented: $showImagePicker) {
-            ImagePicker(image: $image, isShowingImage: $isShowingImage)
+            ImagePicker(image: $image, uiimage: $uiimage, isShowingImage: $isShowingImage)
                 .environmentObject(viewModel)
         }
     }
@@ -314,6 +308,7 @@ struct AddTransactionView: View {
     
 struct ImagePicker: UIViewControllerRepresentable {
     @Binding var image: Image?
+    @Binding var uiimage: UIImage?
     @Binding var isShowingImage: Bool
     @Environment(\.presentationMode) var presentationMode
     @StateObject private var viewModel = ContentViewModel()
@@ -330,9 +325,8 @@ struct ImagePicker: UIViewControllerRepresentable {
         func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
             if let uiImage = info[.originalImage] as? UIImage {
                 parent.image = Image(uiImage: uiImage)
-                let uiImage = info[.originalImage] as? UIImage
-                viewModel.storedImage = info[.originalImage] as? UIImage
                 parent.isShowingImage = true
+                parent.uiimage = uiImage
             }
             parent.presentationMode.wrappedValue.dismiss()
         }

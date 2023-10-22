@@ -9,6 +9,7 @@ import Foundation
 import Combine
 import SwiftUI
 import Firebase
+import FirebaseStorage
 
 final class ContentViewModel: ObservableObject {
     @Published public var isAddingTransaction = false
@@ -28,7 +29,7 @@ final class ContentViewModel: ObservableObject {
         }
 
     
-    func addTransaction(amount: Int, category: String, date: Date, imageUri: String, name: String, source: String, type: String){
+    func addTransaction(amount: Int, category: String, date: Date, imageUri: String, name: String, source: String, type: String, image: UIImage?){
         let user = Auth.auth().currentUser
         if let user = user{
             let db = Firestore.firestore()
@@ -48,14 +49,18 @@ final class ContentViewModel: ObservableObject {
                             print("Error adding transaction: \(error.localizedDescription)")
                         } else {
                             print("Transaction added with ID: \(ref!.documentID)")
-                            self.isAddingTransaction = true
+                            if image != nil{
+                                //self.saveImageFromDirectory(fileName: ref!.documentID, image: image)
+                                self.uploadImage(fileName: ref!.documentID, image: image)
+                            }
+                            self.isAddingTransaction = false
                         }
                     }
                 }
             }
     
     
-    func saveImageFromDirectory(fileName: String){
+    func saveImageFromDirectory(fileName: String, image: UIImage?){
         
         let dir_path = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("transactions", isDirectory: true)
         
@@ -69,15 +74,44 @@ final class ContentViewModel: ObservableObject {
             }
         }
         
-        let img_dir = dir_path.appendingPathComponent(fileName)
+        let img_dir = dir_path.appendingPathComponent(fileName + ".png")
         
         do{
-            try storedImage?.pngData()?.write(to: img_dir)
+            print("Image will be saved at: " + img_dir.path)
+            try image?.pngData()?.write(to: img_dir)
             print("Image saved")
         }
         catch{
             print("Some error: " + error.localizedDescription)
         }
+    }
+    
+    func uploadImage(fileName: String, image: UIImage?){
+        
+        if image != nil{
+            
+            let storageRef = Storage.storage().reference()
+            
+            let imageData = image!.jpegData(compressionQuality: 0.8)
+            
+            guard imageData != nil else{
+            return
+        }
+        
+        let fileRef = storageRef.child("Transactions/\(fileName).jpg")
+        
+        let uploadTask = fileRef.putData(imageData!, metadata: nil){ metadata, error in
+            
+            
+            if error == nil && metadata != nil{
+                
+            }
+            
+        }
+        }else{
+            print("La imagen es nil")
+        }
+        
     }
     
 }
@@ -97,6 +131,7 @@ final class MainMenuViewModel: ObservableObject {
 
 final class HistoryViewModel: ObservableObject {
     @Published public var transactions: [Transaction] = []
+    @Published public var storedImage: UIImage?
     let currentDateTime = Date()
     
     // Función para formatear la fecha y hora
@@ -156,6 +191,7 @@ final class HistoryViewModel: ObservableObject {
                     print("Error deleting category: \(error.localizedDescription)")
                 } else {
                     print("Category deleted successfully")
+                    self.deleteImage(fileName: transactionDocument.documentID)
                     
                     // Optionally, remove the deleted category from your local array
                     if let index = self.transactions.firstIndex(where: { $0.transactionId == transactionId }) {
@@ -166,14 +202,60 @@ final class HistoryViewModel: ObservableObject {
         }
     }
     
-    func loadImageFromDirectory(){
-        
+    func loadImageFromDirectory(fileName: String){
+        let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let documentsPath = documentsURL.appendingPathComponent("transactions")
+        let imagePath = documentsPath.appendingPathComponent(fileName + ".png")
+
+        print("Image will be loaded from: " + imagePath.path)
+        self.storedImage = UIImage(contentsOfFile: imagePath.path)
+        print("Image Loaded")
+    }
+
+    func deleteImageFromDirectory(fileName: String){
+        let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let documentsPath = documentsURL.appendingPathComponent("transactions")
+        let imagePath = documentsPath.appendingPathComponent(fileName + ".png")
+
+        do {
+            try FileManager.default.removeItem(at: imagePath)
+            print("Image Deleted from directory")
+        } catch {
+            print("Failed to delete: " + error.localizedDescription)
+        }
     }
     
-    func deleteImageFromDirectory(){
+    func retrieveImage(fileName: String){
+        let storageRef = Storage.storage().reference()
         
+        let fileRef = storageRef.child("Transactions/\(fileName).jpg")
+        
+        fileRef.getData(maxSize: 5 * 1024 * 1024){
+            data, error in
+            
+            if error == nil && data != nil{
+                
+                self.storedImage = UIImage(data: data!)
+            }
+            
+        }
     }
     
+    func deleteImage(fileName: String){
+        let storageRef = Storage.storage().reference()
+        
+        let fileRef = storageRef.child("Transactions/\(fileName).jpg")
+
+        // Delete the file
+        fileRef.delete { error in
+          if let error = error {
+            print("an error occur")
+          } else {
+            print("Image deleted")
+          }
+        }
+    }
+   
 }
 
 
