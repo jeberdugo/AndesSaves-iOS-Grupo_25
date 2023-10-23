@@ -192,8 +192,8 @@ struct AddTransactionView: View {
                 if viewModel.selectedType == 1 {
                     Section(header: Text("Expense Category")) {
                         Picker("Select Category", selection: $viewModel.selectedExpenseCategory) {
-                            ForEach(CategoryView.expenseCategories, id: \.self) { category in
-                                Text(category)
+                            ForEach(0..<CategoryView.expenseCategories.count, id: \.self) { index in
+                                Text(CategoryView.expenseCategories[index])
                             }
                         }
                         .pickerStyle(SegmentedPickerStyle())
@@ -243,10 +243,20 @@ struct AddTransactionView: View {
             }
             
             Button(action: {
+                
+            if viewModel.transactionName.isEmpty || viewModel.transactionAmount.isEmpty || viewModel.transactionSource.isEmpty {
+                                    // Set error flag and message
+                viewModel.fieldsAreEmpty = true
+                viewModel.errorText = "All fields must be filled."
+            } else {
+                viewModel.fieldsAreEmpty = false
+                viewModel.errorText = ""
                 if let amount = Int(viewModel.transactionAmount), amount > 0{
                     // Add action logic here to save the transaction
                     if viewModel.selectedType == 0{
                         viewModel.addTransaction(amount: Int(viewModel.transactionAmount) ?? 0, category: "Income", date: Date(), imageUri: "", name: viewModel.transactionName, source: viewModel.transactionSource, type: "Income", image:uiimage)
+                        
+                        viewModel.clearTextFields()
                     }
                     else{
                         if viewModel.balance-(Float(viewModel.transactionAmount) ?? 0.0) < 0 {
@@ -254,14 +264,16 @@ struct AddTransactionView: View {
                         }
                         else{
                             viewModel.addTransaction(amount: -1*(Int(viewModel.transactionAmount) ?? 0), category: CategoryView.expenseCategories[viewModel.selectedExpenseCategory], date: Date(), imageUri: "", name: viewModel.transactionName, source: viewModel.transactionSource, type: "Expense", image:uiimage)
+                            
+                            viewModel.clearTextFields()
                         }
                     }
+                    
                 }else{
-                    showAlertInteger = true
+                    viewModel.fieldsAreEmpty = true
+                    viewModel.errorText = "Amount field has to be a positive number"
                 }
-                
-                
-                
+            }
                       
             }) {
                 Text("Add")
@@ -280,6 +292,8 @@ struct AddTransactionView: View {
                         Text("Confirm"),
                         action: {
                             viewModel.addTransaction(amount: -1*(Int(viewModel.transactionAmount) ?? 0), category: CategoryView.expenseCategories[viewModel.selectedExpenseCategory], date: Date(), imageUri: "", name: viewModel.transactionName, source: viewModel.transactionSource, type: "Expense", image:uiimage)
+                            
+                            viewModel.clearTextFields()
                         }
                     ),
                     secondaryButton: .cancel())}
@@ -291,6 +305,31 @@ struct AddTransactionView: View {
             ImagePicker(image: $image, uiimage: $uiimage, isShowingImage: $isShowingImage)
                 .environmentObject(viewModel)
         }
+        
+        .onAppear {
+                    #if os(iOS)
+                    viewModel.motionManager.startAccelerometerUpdates(to: OperationQueue.current!) { (data, error) in
+                        if let data = data {
+                            if data.acceleration.x > 2.0 || data.acceleration.y > 2.0 || data.acceleration.z > 2.0 {
+                                viewModel.clearTextFields()
+                            }
+                        }
+                    }
+                    #endif
+                }
+
+                .onDisappear {
+                    #if os(iOS)
+                    viewModel.motionManager.stopAccelerometerUpdates()
+                    #endif
+                }
+        
+        if viewModel.fieldsAreEmpty {
+            Text(viewModel.errorText)
+                        .foregroundColor(.red)
+                        .font(.caption)
+                        .padding(.top, 10)
+                }
     }
 }
 

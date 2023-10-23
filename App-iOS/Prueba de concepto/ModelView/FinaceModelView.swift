@@ -10,16 +10,29 @@ import Combine
 import SwiftUI
 import Firebase
 import FirebaseStorage
+import CoreMotion
 
 final class ContentViewModel: ObservableObject {
     @Published public var isAddingTransaction = false
+    @Published public var fieldsAreEmpty = false
     @Published public var transactionName = ""
     @Published public var transactionAmount  = ""
     @Published public var transactionSource = ""
+    @Published public var errorText = ""
     @Published public var selectedType: Int = 0 // 0 for Income, 1 for Expense
     @Published public var selectedExpenseCategory: Int = 0
     @Published public var balance: Float = 0
     @Published public var storedImage: UIImage?
+    
+    #if os(iOS)
+    let motionManager = CMMotionManager()
+    #endif
+    
+    func clearTextFields() {
+        transactionName = ""
+        transactionAmount = ""
+        transactionSource = ""
+    }
 
     
     func addTransaction(amount: Int, category: String, date: Date, imageUri: String, name: String, source: String, type: String, image: UIImage?){
@@ -42,7 +55,7 @@ final class ContentViewModel: ObservableObject {
                             print("Error adding transaction: \(error.localizedDescription)")
                         } else {
                             self.balance = self.balance + Float(amount)
-                            self.updateBalance(transactionId: ref!.documentID, newBalance: self.balance)
+                            self.updateBalance(newBalance: self.balance)
                             print("Transaction added with ID: \(ref!.documentID)")
                             if image != nil{
                                 //self.saveImageFromDirectory(fileName: ref!.documentID, image: image)
@@ -54,7 +67,7 @@ final class ContentViewModel: ObservableObject {
                 }
             }
     
-    func updateBalance(transactionId: String, newBalance: Float) {
+    func updateBalance(newBalance: Float) {
         if let user = Auth.auth().currentUser {
             let db = Firestore.firestore()
             let userDocument = db.collection("users").document(user.uid)
@@ -474,6 +487,7 @@ final class LoginViewModel: ObservableObject {
                 }
                 self.isShowAlarm = true
             } else {
+                
                 self.isLoggedIn = true
             }
         }
@@ -534,6 +548,7 @@ final class SettingsViewModel: ObservableObject {
                             let id = data["userId"] as? String ?? ""
                         if  id == user.uid{
                             self.balance = data["balance"] as? Float ?? 0
+                            print(self.balance)
                             self.email = data["email"] as? String ?? ""
                             self.name = data["name"] as? String ?? ""
                             self.phone = data["phone"] as? String ?? ""

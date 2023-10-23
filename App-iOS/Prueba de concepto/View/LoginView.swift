@@ -9,6 +9,8 @@ struct LoginView: View {
     @State private var selection: Bool? = false
     @State private var showNextView = false
     @StateObject private var functions = GlobalFunctions()
+    @StateObject private var settingsView = SettingsViewModel()
+    @StateObject private var Contentview = ContentViewModel()
     
     
 
@@ -58,9 +60,12 @@ struct LoginView: View {
                 
                 Button(action: {
                     viewModel.login(email: self.email, password: self.password)
+                    settingsView.fetchUser()
+                    Contentview.updateBalance(newBalance: settingsView.balance)
                     if viewModel.isLoggedIn {
                             self.showNextView = true
                         }
+                    
                 }) {
                     Text("Login")
                         .foregroundColor(Color.white)
