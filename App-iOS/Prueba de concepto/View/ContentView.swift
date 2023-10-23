@@ -136,6 +136,9 @@ struct ContentView: View {
                 }
             }
         }
+        .onAppear(){
+            viewModel.fetchUser() 
+        }
         .navigationBarBackButtonHidden(/*@START_MENU_TOKEN@*/true/*@END_MENU_TOKEN@*/)
         }
     }
@@ -271,7 +274,7 @@ struct AddTransactionView: View {
                     
                 }else{
                     viewModel.fieldsAreEmpty = true
-                    viewModel.errorText = "Amount field has to be a positive number"
+                    viewModel.errorText = "Amount field only accept positive numbers"
                 }
             }
                       

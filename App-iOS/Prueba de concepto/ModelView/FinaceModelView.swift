@@ -86,6 +86,36 @@ final class ContentViewModel: ObservableObject {
         }
     }
     
+    func fetchUser(){
+        if let user = Auth.auth().currentUser {
+            let db = Firestore.firestore()
+            let usersCollection = db.collection("users")
+            
+
+            usersCollection.getDocuments { (snapshot, error) in
+                guard error == nil else {
+                    print(error!.localizedDescription)
+                    return
+                }
+                
+                if let snapshot = snapshot {
+                    for document in snapshot.documents{
+                            let data = document.data()
+                            let id = data["userId"] as? String ?? ""
+                        if  id == user.uid{
+                            self.balance = data["balance"] as? Float ?? 0
+                            print(self.balance)
+                            let email = data["email"] as? String ?? ""
+                            let name = data["name"] as? String ?? ""
+                            let phone = data["phone"] as? String ?? ""
+                            let userId = data["userId"] as? String ?? ""
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
     
     func saveImageFromDirectory(fileName: String, image: UIImage?){
         
@@ -548,7 +578,6 @@ final class SettingsViewModel: ObservableObject {
                             let id = data["userId"] as? String ?? ""
                         if  id == user.uid{
                             self.balance = data["balance"] as? Float ?? 0
-                            print(self.balance)
                             self.email = data["email"] as? String ?? ""
                             self.name = data["name"] as? String ?? ""
                             self.phone = data["phone"] as? String ?? ""

@@ -60,8 +60,6 @@ struct LoginView: View {
                 
                 Button(action: {
                     viewModel.login(email: self.email, password: self.password)
-                    settingsView.fetchUser()
-                    Contentview.updateBalance(newBalance: settingsView.balance)
                     if viewModel.isLoggedIn {
                             self.showNextView = true
                         }
