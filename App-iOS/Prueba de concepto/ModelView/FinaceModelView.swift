@@ -8,72 +8,139 @@
 import Foundation
 import Combine
 import SwiftUI
+import Firebase
+import FirebaseStorage
+import CoreMotion
 
 final class ContentViewModel: ObservableObject {
     @Published public var isAddingTransaction = false
+    @Published public var fieldsAreEmpty = false
     @Published public var transactionName = ""
     @Published public var transactionAmount  = ""
     @Published public var transactionSource = ""
+    @Published public var errorText = ""
     @Published public var selectedType: Int = 0 // 0 for Income, 1 for Expense
     @Published public var selectedExpenseCategory: Int = 0
-    @Published public var balance: Double = 60.0
-        
-    func getBalance() {
-        let url = URL(string: "https://andesaves-backend.onrender.com/users/balance")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+    @Published public var balance: Float = 0
+    @Published public var storedImage: UIImage?
     
-        let token = Auth.shared.getAccessToken()!
-            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let data = data {
-                do {
-                    if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-                        if let balance = json["balance"] as? Double{
-                            DispatchQueue.main.async {
-                                self.balance = balance
+    #if os(iOS)
+    let motionManager = CMMotionManager()
+    #endif
+    
+    func clearTextFields() {
+        transactionName = ""
+        transactionAmount = ""
+        transactionSource = ""
+    }
+
+    
+    func addTransaction(amount: Int, category: String, date: Date, imageUri: String, name: String, source: String, type: String, image: UIImage?){
+        let user = Auth.auth().currentUser
+        if let user = user{
+            let db = Firestore.firestore()
+            let transactionsCollection = db.collection("users").document(user.uid).collection("transactions")
+            // Create a new transaction document with a unique identifier
+                    var ref: DocumentReference? = nil
+                    ref = transactionsCollection.addDocument(data: [
+                        "amount": amount,
+                        "category": category,
+                        "date": date,
+                        "imageUri": imageUri,
+                        "name": name,
+                        "source": source,
+                        "type": type
+                    ]) { error in
+                        if let error = error {
+                            print("Error adding transaction: \(error.localizedDescription)")
+                        } else {
+                            self.balance = self.balance + Float(amount)
+                            self.updateBalance(newBalance: self.balance)
+                            print("Transaction added with ID: \(ref!.documentID)")
+                            if image != nil{
+                                //self.saveImageFromDirectory(fileName: ref!.documentID, image: image)
+                                self.uploadImage(fileName: ref!.documentID, image: image)
                             }
+                            self.isAddingTransaction = false
                         }
                     }
-                } catch let error {
-                    print(error.localizedDescription)
                 }
             }
-        }.resume()
+    
+    func updateBalance(newBalance: Float) {
+        if let user = Auth.auth().currentUser {
+            let db = Firestore.firestore()
+            let userDocument = db.collection("users").document(user.uid)
+
+            userDocument.updateData([
+                "balance": newBalance
+            ]) { error in
+                if let error = error {
+                    // Handle the error here
+                    print("Error updating balance: \(error.localizedDescription)")
+                } else {
+                    // Update successful
+                    print("Balance updated successfully")
+                }
+            }
+        }
     }
+    
+    
+    func saveImageFromDirectory(fileName: String, image: UIImage?){
         
+        let dir_path = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("transactions", isDirectory: true)
+        
+        if !FileManager.default.fileExists(atPath: dir_path.path){
+            do{
+                try FileManager.default.createDirectory(atPath: dir_path.path, withIntermediateDirectories: true, attributes: nil)
+                print("Succesfully created")
+            }
+            catch{
+                print("Error creating user directory: " + error.localizedDescription)
+            }
+        }
+        
+        let img_dir = dir_path.appendingPathComponent(fileName + ".png")
+        
+        do{
+            print("Image will be saved at: " + img_dir.path)
+            try image?.pngData()?.write(to: img_dir)
+            print("Image saved")
+        }
+        catch{
+            print("Some error: " + error.localizedDescription)
+        }
+    }
     
-    
-    func addIncome(source: String,  amount: Int) {
-        let income = IncomeIn( amount: amount, source: source, user: Auth.shared.getUser()!)
-        guard let url = URL(string: "https://andesaves-backend.onrender.com/incomes/new") else { return }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        let token = Auth.shared.getAccessToken()!
-            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-        do {
-            let jsonData = try JSONEncoder().encode(income)
-            request.httpBody = jsonData
-        } catch {
-            print("Error encoding income data")
+    func uploadImage(fileName: String, image: UIImage?){
+        
+        if image != nil{
+            
+            let storageRef = Storage.storage().reference()
+            
+            let imageData = image!.jpegData(compressionQuality: 0.8)
+            
+            guard imageData != nil else{
             return
         }
-
-        URLSession.shared.dataTask(with: request) { (data, response, error) in
-            if let error = error {
-                print("Error making POST request: \(error)")
-                return
+        
+        let fileRef = storageRef.child("Transactions/\(fileName).jpg")
+        
+        let uploadTask = fileRef.putData(imageData!, metadata: nil){ metadata, error in
+            
+            
+            if error == nil && metadata != nil{
+                
             }
-            if let response = response as? HTTPURLResponse {
-                print("Response status code: \(response.statusCode)")
-            }
-        }.resume()
+            
+        }
+        }else{
+            print("La imagen es nil")
+        }
+        
     }
+    
 }
 
 
@@ -90,7 +157,8 @@ final class MainMenuViewModel: ObservableObject {
 
 
 final class HistoryViewModel: ObservableObject {
-    @Published public var transactions: [Transaction] = [ ]
+    @Published public var transactions: [Transaction] = []
+    @Published public var storedImage: UIImage?
     let currentDateTime = Date()
     
     // Función para formatear la fecha y hora
@@ -101,84 +169,120 @@ final class HistoryViewModel: ObservableObject {
     }
     
     
-    func getData() {
-            guard let url = URL(string: "https://andesaves-backend.onrender.com/users/transactions") else { return }
+    func listTransactions() {
+        transactions.removeAll()
+        if let user = Auth.auth().currentUser {
+            let db = Firestore.firestore()
+            let transactionsCollection = db.collection("users").document(user.uid).collection("transactions")
             
-            var request = URLRequest(url: url)
-            request.httpMethod = "GET"
-        let token = Auth.shared.getAccessToken()!
-            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-            
-        URLSession.shared.dataTask(with: request) { (data, response, error) in
-            if let _ = error {
-                print("Error")
-            }
-            
-            if let data = data,
-               let httpResponse = response as? HTTPURLResponse,
-               httpResponse.statusCode == 200 {
-                let decoder = JSONDecoder()
-                let dateFormatter = DateFormatter()
-                dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
-                dateFormatter.locale = Locale(identifier: "en_US_POSIX")
-                dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
-                decoder.dateDecodingStrategy = .formatted(dateFormatter)
+
+            transactionsCollection.getDocuments { (snapshot, error) in
+                guard error == nil else {
+                    print(error!.localizedDescription)
+                    return
+                }
                 
-                do {
-                    let transactionsDataModel = try decoder.decode(TransactionsResponse.self, from: data)
-                    self.transactions = transactionsDataModel.transactions
-                    print("Transactions \(transactionsDataModel)")
-                } catch {
-                    print("Decoding error: \(error)")
+                if let snapshot = snapshot {
+                    for document in snapshot.documents{
+                            let data = document.data()
+            
+                            let amount = data["amount"] as? Float ?? 0
+                            let category = data["category"] as? String ?? ""
+                        let date = data["date"] as? Timestamp ?? Timestamp()
+                            let imageUri = data["imageUri"] as? String ?? ""
+                            let name = data["name"] as? String ?? ""
+                            let source = data["source"] as? String ?? ""
+                            let transactionId = document.documentID
+                            let type = data["type"] as? String ?? ""
+                            
+                            let transaction = Transaction(amount: amount, category: category, date: date, imageUri: imageUri, name: name, source: source, transactionId: transactionId, type: type)
+                            self.transactions.append(transaction)
                 }
             }
-        }.resume()
-
+            }
         }
+    }
     
-    @Published var incomes = [Income]()
     
-    func listIncomes() {
-            guard let url = URL(string: "https://andesaves-backend.onrender.com/categories/list/\(Auth.shared.getUser()!)") else { return }
+    func deleteTransaction(transactionId: String) {
+        if let user = Auth.auth().currentUser {
+            let db = Firestore.firestore()
+            let transactionsCollection = db.collection("users").document(user.uid).collection("transactions")
 
-            var request = URLRequest(url: url)
-            request.httpMethod = "GET"
-            request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-            print("token" + Auth.shared.getAccessToken()!)
-            let token = Auth.shared.getAccessToken()
-            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            // Get a reference to the category document you want to delete
+            let transactionDocument = transactionsCollection.document(transactionId)
 
-            URLSession.shared.dataTask(with: request) { data, response, error in
-                if let data = data {
-                    do {
-                        if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [[String: Any]] {
-                            // Parse and handle the JSON response as needed
-                            DispatchQueue.main.async {
-                                self.incomes = json.map { dict in
-                                    Income(
-                                        id: dict["id"] as? String ?? "",
-                                        amount: dict["amount"] as? Int ?? 0,
-                                        date: dict["date"] as? Date ?? self.currentDateTime,
-                                        source: dict["source"] as? String ?? "",
-                                        user: dict["user"] as? String ?? ""
-                                    )
-                                }
-                            }
-                        }
-                    } catch let error {
-                        print(error.localizedDescription)
+            // Delete the category document
+            transactionDocument.delete { error in
+                if let error = error {
+                    print("Error deleting category: \(error.localizedDescription)")
+                } else {
+                    print("Category deleted successfully")
+                    self.deleteImage(fileName: transactionDocument.documentID)
+                    
+                    // Optionally, remove the deleted category from your local array
+                    if let index = self.transactions.firstIndex(where: { $0.transactionId == transactionId }) {
+                        self.transactions.remove(at: index)
                     }
                 }
-                if let error = error {
-                    print("Error making GET request: \(error)")
-                                   return
-                               }
-                               if let response = response as? HTTPURLResponse {
-                                   print("Response status code: \(response.statusCode)")
-                               }
-                           }.resume()
-                       }
+            }
+        }
+    }
+    
+    func loadImageFromDirectory(fileName: String){
+        let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let documentsPath = documentsURL.appendingPathComponent("transactions")
+        let imagePath = documentsPath.appendingPathComponent(fileName + ".png")
 
+        print("Image will be loaded from: " + imagePath.path)
+        self.storedImage = UIImage(contentsOfFile: imagePath.path)
+        print("Image Loaded")
+    }
+
+    func deleteImageFromDirectory(fileName: String){
+        let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let documentsPath = documentsURL.appendingPathComponent("transactions")
+        let imagePath = documentsPath.appendingPathComponent(fileName + ".png")
+
+        do {
+            try FileManager.default.removeItem(at: imagePath)
+            print("Image Deleted from directory")
+        } catch {
+            print("Failed to delete: " + error.localizedDescription)
+        }
+    }
+    
+    func retrieveImage(fileName: String){
+        let storageRef = Storage.storage().reference()
+        
+        let fileRef = storageRef.child("Transactions/\(fileName).jpg")
+        
+        fileRef.getData(maxSize: 5 * 1024 * 1024){
+            data, error in
+            
+            if error == nil && data != nil{
+                
+                self.storedImage = UIImage(data: data!)
+            }
+            
+        }
+    }
+    
+    func deleteImage(fileName: String){
+        let storageRef = Storage.storage().reference()
+        
+        let fileRef = storageRef.child("Transactions/\(fileName).jpg")
+
+        // Delete the file
+        fileRef.delete { error in
+          if let error = error {
+            print("an error occur")
+          } else {
+            print("Image deleted")
+          }
+        }
+    }
+   
 }
 
 
@@ -195,68 +299,13 @@ final class BudgetsViewModel: ObservableObject {
     }
 
     func createBudget(name: String, total: Int, date: Date, type: Int) {
-        let budget = Budget(name: name, total: total, user: Auth.shared.getUser()!, date: date, type: type)
-        guard let url = URL(string: "https://andesaves-backend.onrender.com/budgets/new") else { return }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        let token = Auth.shared.getAccessToken()
-            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-        do {
-            let jsonData = try JSONEncoder().encode(budget)
-            request.httpBody = jsonData
-        } catch {
-            print("Error encoding budget data")
-            return
-        }
-
-        URLSession.shared.dataTask(with: request) { (data, response, error) in
-            if let error = error {
-                print("Error making POST request: \(error)")
-                return
-            }
-            if let response = response as? HTTPURLResponse {
-                print("Response status code: \(response.statusCode)")
-            }
-        }.resume()
+        
     }
     
     func fetchBudgets(completion: @escaping ([Budget]?) -> Void) {
-            guard let url = URL(string: "https://andesaves-backend.onrender.com/budgets/list/\(Auth.shared.getUser()!)") else {
-                completion(nil)
-                return
-            }
-
-            var request = URLRequest(url: url)
-            request.httpMethod = "GET"
-            request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-            let token = Auth.shared.getAccessToken()!
-            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-            URLSession.shared.dataTask(with: request) { (data, response, error) in
-                if let error = error {
-                    print("Error making GET request: \(error)")
-                    completion(nil)
-                    return
-                }
-                if let response = response as? HTTPURLResponse {
-                    print("Response status code: \(response.statusCode)")
-                }
-                if let data = data {
-                    do {
-                        let budgets = try JSONDecoder().decode([Budget].self, from: data)
-                        completion(budgets)
-                    } catch {
-                        print("Error decoding budget data")
-                        completion(nil)
-                    }
-                } else {
-                    completion(nil)
-                }
-            }.resume()
-        }
+        
+    }
+    
 
 }
 
@@ -265,6 +314,8 @@ final class TagsViewModel: ObservableObject {
         @Published var tagsItems: [TagsItem] = [
             TagsItem(title: "Add", imageName: "Add")
         ]
+    
+    @Published var expenseCategories:  [String] = []
     
         @Published var count = 0
 
@@ -283,126 +334,84 @@ final class TagsViewModel: ObservableObject {
         @Published var categoriesWithId = [CategoryWithId]()
         @Published var selectedCategoryId: String?
     
-    func createCategory(name: String) {
-                   let category = Category(name: name, user: Auth.shared.getUser()!)
-                   guard let url = URL(string: "https://andesaves-backend.onrender.com/categories/new") else { return }
-
-                   var request = URLRequest(url: url)
-                   request.httpMethod = "POST"
-                   request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-                   print("token" + Auth.shared.getAccessToken()!)
-                   let token = Auth.shared.getAccessToken()
-                       request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-                   do {
-                       let jsonData = try JSONEncoder().encode(category)
-                       request.httpBody = jsonData
-                   } catch {
-                       print("Error encoding budget data")
-                       return
-                   }
-
-                   URLSession.shared.dataTask(with: request) { (data, response, error) in
-                       if let error = error {
-                           print("Error making POST request: \(error)")
-                           return
-                       }
-                       if let response = response as? HTTPURLResponse {
-                           print("Response status code: \(response.statusCode)")
-                       }
-                   }.resume()
-               }
+    
+    func createCategory(name: String){
+        let user = Auth.auth().currentUser
+        if let user = user{
+            let db = Firestore.firestore()
+            let categoriesCollection = db.collection("users").document(user.uid).collection("tags")
+            // Create a new transaction document with a unique identifier
+                    var ref: DocumentReference? = nil
+                    ref = categoriesCollection.addDocument(data: [
+                        "name": name
+                    ]) { error in
+                        if let error = error {
+                            print("Error adding transaction: \(error.localizedDescription)")
+                        } else {
+                            print("Transaction added with ID: \(ref!.documentID)")
+                            
+                        }
+                    }
+                }
+            }
     
     
     func listCategories() {
-            guard let url = URL(string: "https://andesaves-backend.onrender.com/categories/list/\(Auth.shared.getUser()!)") else { return }
+        categoriesWithId.removeAll()
+        self.expenseCategories.removeAll()
+        if let user = Auth.auth().currentUser {
+            let db = Firestore.firestore()
+            let categoriesCollection = db.collection("users").document(user.uid).collection("tags")
+            
 
-            var request = URLRequest(url: url)
-            request.httpMethod = "GET"
-            request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-            print("token" + Auth.shared.getAccessToken()!)
-            let token = Auth.shared.getAccessToken()
-            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-            URLSession.shared.dataTask(with: request) { data, response, error in
-                if let data = data {
-                    do {
-                        if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [[String: Any]] {
-                            // Parse and handle the JSON response as needed
-                            DispatchQueue.main.async {
-                                self.categoriesWithId = json.map { dict in
-                                    CategoryWithId(
-                                        id: dict["id"] as? String ?? "",
-                                        name: dict["name"] as? String ?? "",
-                                        user: dict["user"] as? String ?? ""
-                                    )
-                                }
-                                
-                                let category = CategoryWithId(id: "-1", name: "Add", user: Auth.shared.getUser()!)
-                                self.categoriesWithId.insert(category, at: self.categoriesWithId.count - 1)
-                                
-                                // Save the category ID of the first category (if available)
-                                if let firstCategoryId = self.categoriesWithId.first?.id {
-                                    UserDefaults.standard.set(firstCategoryId, forKey: "SelectedCategoryIdKey")
-                                    self.selectedCategoryId = firstCategoryId // Update the selectedCategoryId property
-                                }
-                            }
-                        }
-                    } catch let error {
-                        print(error.localizedDescription)
-                    }
+            categoriesCollection.getDocuments { (snapshot, error) in
+                guard error == nil else {
+                    print(error!.localizedDescription)
+                    return
                 }
-                if let error = error {
-                    print("Error making GET request: \(error)")
-                                   return
-                               }
-                               if let response = response as? HTTPURLResponse {
-                                   print("Response status code: \(response.statusCode)")
-                               }
-                           }.resume()
-                       }
+                
+                if let snapshot = snapshot {
+                    for document in snapshot.documents{
+                            let data = document.data()
+            
+                            let name = data["name"] as? String ?? ""
+                            let categoryId = document.documentID
+                            
+                            let category = CategoryWithId(name: name, categoryId: categoryId )
+                            self.categoriesWithId.append(category)
+                            self.expenseCategories.append(name)
+                }
+            }
+            }
+        }
+    }
     
     
     func deleteCategory(categoryId: String) {
-                  let url = URL(string: "https://andesaves-backend.onrender.com/categories/delete/\(categoryId)")!
-                  var request = URLRequest(url: url)
-                    print("hola")
-                    print(categoryId)
-                    print(Auth.shared.getUser()!)
-                  request.httpMethod = "DELETE"
-                  request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-                  print("token" + Auth.shared.getAccessToken()!)
-                  let token = Auth.shared.getAccessToken()
-                  request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        if let user = Auth.auth().currentUser {
+            let db = Firestore.firestore()
+            let categoriesCollection = db.collection("users").document(user.uid).collection("tags")
 
-                  URLSession.shared.dataTask(with: request) { data, response, error in
-                      if let data = data {
-                          do {
-                              if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-                                  if let success = json["success"] as? Bool, success {
-                                      print("Category deleted successfully")
-                                      
-                                      if self.selectedCategoryId == categoryId {
-                                          self.selectedCategoryId = nil
-                                      }
-                                  } else {
-                                      print("Category deletion failed.")
-                                  }
-                              }
-                          } catch let error {
-                              print(error.localizedDescription)
-                          }
-                      }
-                      if let error = error {
-                          print("Error making GET request: \(error)")
-                          return
-                      }
-                      if let response = response as? HTTPURLResponse {
-                          print("Response status code: \(response.statusCode)")
-                                           }
-                                       }.resume()
-                                   }
+            // Get a reference to the category document you want to delete
+            let categoryDocument = categoriesCollection.document(categoryId)
+
+            // Delete the category document
+            categoryDocument.delete { error in
+                if let error = error {
+                    print("Error deleting category: \(error.localizedDescription)")
+                } else {
+                    print("Category deleted successfully")
+                    
+                    // Optionally, remove the deleted category from your local array
+                    if let index = self.categoriesWithId.firstIndex(where: { $0.categoryId == categoryId }) {
+                        self.categoriesWithId.remove(at: index)
+                    }
+                }
             }
+        }
+    }
+    
+}
 
 
 final class SummaryViewModel: ObservableObject {
@@ -410,104 +419,82 @@ final class SummaryViewModel: ObservableObject {
 }
 
 final class RegisterViewModel: ObservableObject {
-
+    @Published var isRegistered = false
+    @Published var message = ""
+    
+    func register(name: String, phoneNumber: String, password: String, passwordConfirmation: String, email: String) {
+        self.isRegistered = false
         
-    func register(name: String, phoneNumber : String, password : String, email: String)
-    {
-        let url = URL(string: "https://andesaves-backend.onrender.com/auth/register")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        let parameters: [String: Any] = [
-            "name": name,
-            "email": email,
-            "phoneNumber": phoneNumber,
-            "password": password
-        ]
-        
-        do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: parameters, options: .prettyPrinted)
-        } catch let error {
-            print(error.localizedDescription)
+        if password != passwordConfirmation {
+            // Manejo de errores si las contraseñas no coinciden
+            // Puedes mostrar una alerta al usuario
+            self.message = "Passwords do not match"
         }
-        
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let data = data {
-                do {
-                    print(data)
-                    if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-                        print(json)
+
+        else{
+            Auth.auth().createUser(withEmail: email, password: password) { (Result, error) in
+                if error != nil {
+                    self.message = error!.localizedDescription
+                } else {
+                    // Registro exitoso
+                    self.isRegistered = true
+                    self.message = "Registration completed successfully"
+                    let user = Auth.auth().currentUser
+                    if let user = user {
+                        let db = Firestore.firestore()
+                        let ref = db.collection("users").document(user.uid)
+                        ref.setData(["balance": 0, "email": email, "name": name, "phone": phoneNumber, "userId": user.uid]){error in
+                            if let error = error{
+                                
+                            }
+                            
+                        }
+                        
+                        let changeRequest = user.createProfileChangeRequest()
+                        changeRequest.displayName = name
+                        changeRequest.commitChanges { (error) in
+                        }
                     }
-                } catch let error {
-                    print(error.localizedDescription)
                 }
             }
-        }.resume()
+            
+        }
+        
     }
+
 }
+
+
 
 final class LoginViewModel: ObservableObject {
 
     @Published var isLoggedIn = false
+    @Published var isShowAlarm = false
     @Published var alertItem: AlertItem?
     @Published var token = ""
     @Published var user = ""
+    @Published var message = ""
     
-    func login(email: String, password: String, completion: @escaping (Bool) -> Void) {
-        let url = URL(string: "https://andesaves-backend.onrender.com/auth/login")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        let parameters: [String: Any] = [
-            "email": email,
-            "password": password
-        ]
-        
-        do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: parameters, options: .prettyPrinted)
-        } catch let error {
-            print(error.localizedDescription)
-        }
-        
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let data = data {
-                do {
-                    if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-                        if let auth = json["auth"] as? Int{
-                            DispatchQueue.main.async {
-                                if auth == 1 {
-                                    if let token2 = json["token"] as? String{
-                                        self.token = token2
-                                        print(token2)
-                                        if let user2 = json["user"] as? String{
-                                            self.user = user2
-                                            print(user2)
-                                            Auth.shared.setCredentials(
-                                                           accessToken: token2, user: user2
-                                                       )
-  
-                                        }
-                                    }
-                                    self.isLoggedIn = true
-                                    completion(true)
-                                } else {
-                                    if let message = json["message"] as? String{
-                                        self.alertItem = AlertItem(message: message)
-                                    }
-                                    completion(false)
-                                }
-                            }
-                        }
-                    }
-                } catch let error {
-                    print(error.localizedDescription)
+    func login(email: String, password: String ) {
+        self.isShowAlarm = false
+        Auth.auth().signIn(withEmail: email, password: password){ result, error in
+            if error != nil {
+                print(error!.localizedDescription)
+                if error!.localizedDescription != "An internal error has occurred, print and inspect the error details for more information."{
+                    self.message = error!.localizedDescription
+                }else{
+                    self.message = "The password or email is incorrect"
                 }
+                self.isShowAlarm = true
+            } else {
+                
+                self.isLoggedIn = true
             }
-        }.resume()
+        }
     }
+    
 }
+
 final class AccountsViewModel: ObservableObject {
     
     @Published var accounts: [Account] = [
@@ -520,7 +507,58 @@ final class AccountsViewModel: ObservableObject {
 }
 
 final class SettingsViewModel: ObservableObject {
+    @Published public var isLoggingOut = false
+    @Published public var isDeletingAccount = false
+    @Published public var isShowAlarm = false
+    @AppStorage("notificationsEnabled") var notificationsEnabled = false
     
+    @Published public var balance: Float = 0
+    @Published public var email = ""
+    @Published public var name  = ""
+    @Published public var phone = ""
+    @Published public var userId = ""
+    
+    func signOut(){
+        do{
+            try Auth.auth().signOut()
+        } catch{
+            print("DEBUG: Failed to sign out with error \(error.localizedDescription)")
+        }
+    }
+    
+    func deleteAccount(){
+        
+    }
+    
+    func fetchUser(){
+        if let user = Auth.auth().currentUser {
+            let db = Firestore.firestore()
+            let usersCollection = db.collection("users")
+            
+
+            usersCollection.getDocuments { (snapshot, error) in
+                guard error == nil else {
+                    print(error!.localizedDescription)
+                    return
+                }
+                
+                if let snapshot = snapshot {
+                    for document in snapshot.documents{
+                            let data = document.data()
+                            let id = data["userId"] as? String ?? ""
+                        if  id == user.uid{
+                            self.balance = data["balance"] as? Float ?? 0
+                            print(self.balance)
+                            self.email = data["email"] as? String ?? ""
+                            self.name = data["name"] as? String ?? ""
+                            self.phone = data["phone"] as? String ?? ""
+                            self.userId = data["userId"] as? String ?? ""
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 

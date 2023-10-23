@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyAbpsLVbHfXas_0qE9yZ6UcNyVk5EPUdoA</string>
+	<key>GCM_SENDER_ID</key>
+	<string>43563049841</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>Team25-Moviles.Prueba-de-concepto</string>
+	<key>PROJECT_ID</key>
+	<string>movilesapp-98578</string>
+	<key>STORAGE_BUCKET</key>
+	<string>movilesapp-98578.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:43563049841:ios:295207f629aa5a02bd8cd0</string>
+</dict>
+</plist>

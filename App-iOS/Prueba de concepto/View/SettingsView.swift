@@ -11,7 +11,7 @@ import UserNotifications
 // Vista para "Settings"
 struct SettingsView: View {
     @StateObject private var functions = GlobalFunctions()
-    @State private var notificationsEnabled = false
+    @StateObject private var viewModel = SettingsViewModel()
     
     var body: some View {
         ZStack() {
@@ -27,57 +27,66 @@ struct SettingsView: View {
         
         Spacer()
         
-        VStack {
-            VStack {
-                HStack {
-                    Image(systemName: "dollarsign.circle")
-                        .foregroundColor(.blue)
-                        .padding(.leading, 16)
-                        .frame(width: 30, height: 30)
+        List{
+            Section{
+                HStack{
+                    
+                    Image(systemName: "person.circle.fill")
+                        .imageScale(.large)
+                        .foregroundColor(.gray)
+                        .font(.title)
+                        .frame(width: 72, height: 72)
+                    
+                    VStack(alignment: .leading, spacing: 7){
+                        Text(viewModel.name)
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .padding(.top, 4)
+                        
+                        Text(viewModel.email)
+                            .font(.footnote)
+                            .accentColor(.gray)
+                    }
+                }
+            }
+            
+            Section("General"){
+                HStack(spacing: 12){
+                    Image(systemName: "gear.circle.fill")
+                        .imageScale(.small)
+                        .foregroundColor(.gray)
+                        .font(.title)
+                        .frame(width: 20, height: 20)
                     
                     SectionView(title: "Currency")
-                        .font(.headline)
-                        .padding(.leading, 16)
-                        .foregroundColor(functions.isDaytime ? Color.black : Color.white)
+                        .font(.subheadline)
+                        .foregroundColor(.black)
                     
                     Spacer()
+                    
+                    Text("2.0.0")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                        .padding(5)
                 }
                 
-                Divider()
-                
-                HStack {
-                    Image(systemName: "globe")
-                        .foregroundColor(.blue)
-                        .padding(.leading, 16)
-                        .frame(width: 30, height: 30)
-                    
-                    SectionView(title: "Language")
-                        .font(.headline)
-                        .padding(.leading, 16)
-                        .foregroundColor(functions.isDaytime ? Color.black : Color.white)
-                    
-                    Spacer()
-                }
-                
-                Divider()
-                
-                HStack {
-                    Image(systemName: "bell")
-                        .foregroundColor(.blue)
-                        .padding(.leading, 16)
-                        .frame(width: 30, height: 30)
+                HStack(spacing: 12){
+                    Image(systemName: "bell.circle.fill")
+                        .imageScale(.small)
+                        .foregroundColor(.gray)
+                        .font(.title)
+                        .frame(width: 20, height: 20)
                     
                     SectionView(title: "Notifications")
-                        .font(.headline)
-                        .padding(.leading, 16)
-                        .foregroundColor(functions.isDaytime ? Color.black : Color.white)
+                        .font(.subheadline)
+                        .foregroundColor(.black)
                     
                     Spacer()
                     
-                    Toggle("", isOn: $notificationsEnabled) // Add a Toggle switch
+                    Toggle("", isOn: $viewModel.notificationsEnabled) // Add a Toggle switch
                         .padding(.trailing, 16)
                         .foregroundColor(.blue)
-                        .onChange(of: notificationsEnabled) { newValue in
+                        .onChange(of: viewModel.notificationsEnabled) { newValue in
                             // Handle the toggle state change here
                             if newValue {
                                 requestNotificationAuthorization()
@@ -87,9 +96,72 @@ struct SettingsView: View {
                         }
                 }
             }
-            Spacer()
+            
+            Section("Accounts"){
+                
+                        Button{
+                            print("Sign Out..")
+                            viewModel.signOut()
+                            viewModel.isLoggingOut.toggle()
+                        }label: {
+                            HStack(spacing: 12){
+                                Image(systemName: "arrow.left.circle.fill")
+                                    .foregroundColor(.red)
+                                    .imageScale(.small)
+                                    .font(.title)
+                                    .frame(width: 20, height: 20)
+                                
+                                SectionView(title: "Sign Out")
+                                    .font(.subheadline)
+                                    .foregroundColor(.black)
+                            }
+                        }
+                        .fullScreenCover(isPresented: $viewModel.isLoggingOut) {
+                                    LoginView()
+                                }
+
+                    
+                /*
+                        Button{
+                            viewModel.isShowAlarm = true
+                            
+                        }label: {
+                            HStack(spacing: 12){
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.red)
+                                    .imageScale(.small)
+                                    .font(.title)
+                                    .frame(width: 20, height: 20)
+                                
+                                SectionView(title: "Delete Account")
+                                    .font(.subheadline)
+                                    .foregroundColor(.red)
+                            }
+                        }
+                        .fullScreenCover(isPresented: $viewModel.isDeletingAccount) {
+                                    LoginView()
+                                }
+                    .alert(isPresented: $viewModel.isShowAlarm) {
+                        Alert(
+                            title: Text("Warning: Delete Account"),
+                            message: Text("are you sure you want to delete your account permantly?"),
+                            primaryButton: .destructive(
+                                Text("Confirm"),
+                                action: {
+                                    print("Delete Account..")
+                                    viewModel.deleteAccount()
+                                    viewModel.isDeletingAccount.toggle()
+                                }
+                            ),
+                            secondaryButton: .cancel())}
+                 */
+            }
         }
-        .background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
+        .onAppear {
+            
+            viewModel.fetchUser()
+        }
+        
     }
 }
 

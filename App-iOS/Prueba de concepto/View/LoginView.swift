@@ -5,9 +5,14 @@ struct LoginView: View {
     @State private var password = ""
     @State public var token = ""
     @ObservedObject var viewModel = LoginViewModel()
+    @ObservedObject var registerModel = RegisterViewModel()
     @State private var selection: Bool? = false
     @State private var showNextView = false
     @StateObject private var functions = GlobalFunctions()
+    @StateObject private var settingsView = SettingsViewModel()
+    @StateObject private var Contentview = ContentViewModel()
+    
+    
 
     var body: some View {
         NavigationView {
@@ -32,6 +37,7 @@ struct LoginView: View {
                     TextField("Email", text: $email)
                         .textFieldStyle(PlainTextFieldStyle()) // Use PlainTextFieldStyle to remove the default border
                         .padding(.horizontal, 10) // Adjust the horizontal padding as needed
+                        .autocapitalization(.none)
                 }
                 .padding()
                 
@@ -53,11 +59,13 @@ struct LoginView: View {
                 
                 
                 Button(action: {
-                    viewModel.login(email: self.email, password: self.password)  { success in
-                        if success {
+                    viewModel.login(email: self.email, password: self.password)
+                    settingsView.fetchUser()
+                    Contentview.updateBalance(newBalance: settingsView.balance)
+                    if viewModel.isLoggedIn {
                             self.showNextView = true
                         }
-                    }
+                    
                 }) {
                     Text("Login")
                         .foregroundColor(Color.white)
@@ -67,21 +75,22 @@ struct LoginView: View {
                         .cornerRadius(10)
                 }
                 .padding()
-                .alert(item: $viewModel.alertItem) { alertItem in
-                                Alert(title: Text("Error"), message: Text(alertItem.message), dismissButton: .default(Text("OK")))
-                            }
+                .alert(isPresented: $viewModel.isShowAlarm) {
+                          Alert(title: Text("Registration"), message: Text(viewModel.message), dismissButton: .default(Text("OK")))
+                }
                 
                 NavigationLink(
                     destination: ContentView(),
                     isActive: $showNextView
                 ){
                     EmptyView()
-                }
+                }.navigationViewStyle(StackNavigationViewStyle())
+                
                 NavigationLink(destination: RegisterView()) {
                     Text("Don't have an account? Click here")
                         .foregroundColor(Color.blue) // Set your desired text color
                         .underline() // Add an underline to the text
-                }
+                }.navigationViewStyle(StackNavigationViewStyle())
             }
             .padding()
             Spacer()

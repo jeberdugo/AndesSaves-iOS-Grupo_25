@@ -11,20 +11,12 @@ import UserNotifications
 
 
 
-struct FinanceApp: App {
-    var body: some Scene {
-        WindowGroup {
-            LoginView()
-        }
-    }
-}
-
 struct ContentView: View {
     @State private var showAlert = false
     @StateObject private var viewModel = ContentViewModel()
     @StateObject private var functions = GlobalFunctions()
     @StateObject private var History = HistoryViewModel()
-    let expenseCategories = ["Food", "Transport", "House", "Others"]
+    @StateObject private var CategoryView = TagsViewModel()
     
     var body: some View {
         NavigationView {
@@ -44,8 +36,9 @@ struct ContentView: View {
                         Text("$\(String(format: "%.2f", viewModel.balance))")
                             .font(.largeTitle)
                             .foregroundColor(.white)
-                        
                         Button(action: {
+                            CategoryView.listCategories()
+                            print(CategoryView.expenseCategories.count)
                             viewModel.isAddingTransaction.toggle()
                         }) {
                             Text("Add Transaction")
@@ -133,6 +126,7 @@ struct ContentView: View {
                                 .environmentObject(viewModel)
                                 .environmentObject(functions)
                                 .environmentObject(History)
+                                .environmentObject(CategoryView)
 
                         }
                     }
@@ -140,10 +134,6 @@ struct ContentView: View {
                     MainMenu()
                     
                 }
-            }
-        }.onAppear{
-            Task {
-                await viewModel.getBalance()
             }
         }
         .navigationBarBackButtonHidden(/*@START_MENU_TOKEN@*/true/*@END_MENU_TOKEN@*/)
@@ -155,11 +145,13 @@ struct AddTransactionView: View {
     @EnvironmentObject var viewModel: ContentViewModel
     @EnvironmentObject var functions: GlobalFunctions
     @EnvironmentObject var historyViewModel: HistoryViewModel
+    @EnvironmentObject var CategoryView: TagsViewModel
     @State private var showAlert = false
+    @State private var showAlertInteger = false
     @State private var showImagePicker = false
     @State private var image: Image? 
     @State private var isShowingImage = false
-    let expenseCategories = ["Food", "Transport", "House", "Others"]
+    @State private var uiimage: UIImage?
     
     var body: some View {
         ZStack() {
@@ -200,8 +192,8 @@ struct AddTransactionView: View {
                 if viewModel.selectedType == 1 {
                     Section(header: Text("Expense Category")) {
                         Picker("Select Category", selection: $viewModel.selectedExpenseCategory) {
-                            ForEach(0..<expenseCategories.count) { index in
-                                Text(expenseCategories[index])
+                            ForEach(0..<CategoryView.expenseCategories.count, id: \.self) { index in
+                                Text(CategoryView.expenseCategories[index])
                             }
                         }
                         .pickerStyle(SegmentedPickerStyle())
@@ -251,14 +243,38 @@ struct AddTransactionView: View {
             }
             
             Button(action: {
-                // Add action logic here to save the transaction
-                checkAndSendNotificationIfNeeded()
                 
-                if viewModel.selectedType == 1 && viewModel.balance-(Double(viewModel.transactionAmount) ?? 0.0) < 0 {
-                    showAlert = true
-                } else {
-                    viewModel.addIncome(source: viewModel.transactionSource,amount: Int(viewModel.transactionAmount)!)
+            if viewModel.transactionName.isEmpty || viewModel.transactionAmount.isEmpty || viewModel.transactionSource.isEmpty {
+                                    // Set error flag and message
+                viewModel.fieldsAreEmpty = true
+                viewModel.errorText = "All fields must be filled."
+            } else {
+                viewModel.fieldsAreEmpty = false
+                viewModel.errorText = ""
+                if let amount = Int(viewModel.transactionAmount), amount > 0{
+                    // Add action logic here to save the transaction
+                    if viewModel.selectedType == 0{
+                        viewModel.addTransaction(amount: Int(viewModel.transactionAmount) ?? 0, category: "Income", date: Date(), imageUri: "", name: viewModel.transactionName, source: viewModel.transactionSource, type: "Income", image:uiimage)
+                        
+                        viewModel.clearTextFields()
+                    }
+                    else{
+                        if viewModel.balance-(Float(viewModel.transactionAmount) ?? 0.0) < 0 {
+                            showAlert = true
                         }
+                        else{
+                            viewModel.addTransaction(amount: -1*(Int(viewModel.transactionAmount) ?? 0), category: CategoryView.expenseCategories[viewModel.selectedExpenseCategory], date: Date(), imageUri: "", name: viewModel.transactionName, source: viewModel.transactionSource, type: "Expense", image:uiimage)
+                            
+                            viewModel.clearTextFields()
+                        }
+                    }
+                    
+                }else{
+                    viewModel.fieldsAreEmpty = true
+                    viewModel.errorText = "Amount field has to be a positive number"
+                }
+            }
+                      
             }) {
                 Text("Add")
                     .foregroundColor(.white)
@@ -275,7 +291,9 @@ struct AddTransactionView: View {
                     primaryButton: .destructive(
                         Text("Confirm"),
                         action: {
-                            // Add your action logic here to handle the user's confirmation
+                            viewModel.addTransaction(amount: -1*(Int(viewModel.transactionAmount) ?? 0), category: CategoryView.expenseCategories[viewModel.selectedExpenseCategory], date: Date(), imageUri: "", name: viewModel.transactionName, source: viewModel.transactionSource, type: "Expense", image:uiimage)
+                            
+                            viewModel.clearTextFields()
                         }
                     ),
                     secondaryButton: .cancel())}
@@ -284,8 +302,34 @@ struct AddTransactionView: View {
         
         // Camera sheet
         .sheet(isPresented: $showImagePicker) {
-            ImagePicker(image: $image, isShowingImage: $isShowingImage)
+            ImagePicker(image: $image, uiimage: $uiimage, isShowingImage: $isShowingImage)
+                .environmentObject(viewModel)
         }
+        
+        .onAppear {
+                    #if os(iOS)
+                    viewModel.motionManager.startAccelerometerUpdates(to: OperationQueue.current!) { (data, error) in
+                        if let data = data {
+                            if data.acceleration.x > 2.0 || data.acceleration.y > 2.0 || data.acceleration.z > 2.0 {
+                                viewModel.clearTextFields()
+                            }
+                        }
+                    }
+                    #endif
+                }
+
+                .onDisappear {
+                    #if os(iOS)
+                    viewModel.motionManager.stopAccelerometerUpdates()
+                    #endif
+                }
+        
+        if viewModel.fieldsAreEmpty {
+            Text(viewModel.errorText)
+                        .foregroundColor(.red)
+                        .font(.caption)
+                        .padding(.top, 10)
+                }
     }
 }
 
@@ -293,20 +337,25 @@ struct AddTransactionView: View {
     
 struct ImagePicker: UIViewControllerRepresentable {
     @Binding var image: Image?
+    @Binding var uiimage: UIImage?
     @Binding var isShowingImage: Bool
     @Environment(\.presentationMode) var presentationMode
+    @StateObject private var viewModel = ContentViewModel()
     
     class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
         let parent: ImagePicker
+        let viewModel: ContentViewModel
         
         init(_ parent: ImagePicker) {
             self.parent = parent
+            self.viewModel = ContentViewModel()
         }
         
         func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
             if let uiImage = info[.originalImage] as? UIImage {
                 parent.image = Image(uiImage: uiImage)
                 parent.isShowingImage = true
+                parent.uiimage = uiImage
             }
             parent.presentationMode.wrappedValue.dismiss()
         }

@@ -73,8 +73,10 @@ import SwiftUI
                             if viewModel.categoriesWithId[index].name != "Add" {
                                 if viewModel.isEditMode {
                                     Button(action: {
-                                      viewModel.deleteCategory(categoryId: viewModel.categoriesWithId[index].id)
+                                        viewModel.deleteCategory(categoryId: viewModel.categoriesWithId[index].categoryId)
                                        viewModel.listCategories()
+                                        let category = CategoryWithId(name: "Add", categoryId: "0")
+                                        viewModel.categoriesWithId.append(category)
                                     }) {
                                         Image(systemName: "minus.circle.fill")
                                             .foregroundColor(.red)
@@ -100,10 +102,10 @@ import SwiftUI
                     }
                 }
                 .onAppear {
-
-                    
                     viewModel.listCategories()
-                            }
+                    let category = CategoryWithId(name: "Add", categoryId: "0")
+                    viewModel.categoriesWithId.append(category)
+                }
                 
                 Spacer(minLength: 30)
                 .padding()
@@ -130,6 +132,7 @@ struct AddTagDialog: View {
     @StateObject private var viewModel = TagsViewModel()
     @StateObject private var functions = GlobalFunctions()
     @StateObject private var loginViewModel = LoginViewModel()
+    @State private var showAlert = false
     
     var addTagAction: (String) -> Void // Cierre para agregar una nueva etiqueta
     
@@ -164,11 +167,12 @@ struct AddTagDialog: View {
                 .padding()
                 Spacer()
                 Button(action: {
-                    // Llama a la función para agregar la nueva etiqueta
-                    viewModel.createCategory(name: tagName)
-                    viewModel.listCategories()
-                    // Cierra el diálogo
-                    isPresented = false
+                        // Llama a la función para agregar la nueva etiqueta
+                        viewModel.createCategory(name: tagName)
+                        viewModel.listCategories()
+                        // Cierra el diálogo
+                        isPresented = false
+                    
                 }) {
                     Text("Save")
                         .foregroundColor(.white)
@@ -178,6 +182,13 @@ struct AddTagDialog: View {
                         .cornerRadius(10)
                 }
                 .padding()
+                .alert(isPresented: $showAlert) {
+                    Alert(
+                        title: Text("Maximum number of tags exceeded"),
+                        message: Text("Please delete a tag before adding a new one"),
+                        dismissButton: .default(Text("OK"))
+                    )
+                }
                 
             }
             .padding()

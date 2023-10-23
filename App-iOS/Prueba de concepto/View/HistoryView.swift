@@ -40,40 +40,38 @@ struct HistoryView: View {
                             VStack {
                                 Spacer(minLength: 40)
                                 List {
-                                    ForEach(viewModel.transactions) { transaction in
+                                    ForEach(viewModel.transactions, id: \.self) { transaction in
                                         NavigationLink(
                                             destination: TransactionDetailView(transaction: transaction)
                                         ) {
                                             VStack(alignment: .leading) {
-                                                if let income = transaction.income{
-                                                    Text(income.source)
+                                                
+                                                    Text(transaction.name)
                                                         .font(.headline)
                                                         .foregroundColor(Color.black)
-                                                    
-                                                    Text("$\(String(format: "%.2f", income.amount))")
+                                                
+                                                    Text(transaction.source)
                                                         .font(.subheadline)
-                                                        .foregroundColor(income.amount >= 0 ? .green : .red)
-                                                    
-                                                    Text(viewModel.formatDate(income.date))
-                                                        .font(.subheadline)
-                                                        .foregroundColor(Color.gray)
-                                                }
-                                                if let expense = transaction.expense {
-                                                    Text(expense.description)
-                                                        .font(.headline)
                                                         .foregroundColor(Color.black)
                                                     
-                                                    Text("$\(String(format: "%.2f", expense.amount))")
+                                                    Text("$\(String(format: "%.2f", transaction.amount))")
                                                         .font(.subheadline)
-                                                        .foregroundColor(expense.amount >= 0 ? .green : .red)
+                                                        .foregroundColor(transaction.amount >= 0 ? .green : .red)
                                                     
-                                                    Text(viewModel.formatDate(expense.date))
+                                                    Text(viewModel.formatDate(transaction.date.dateValue()))
                                                         .font(.subheadline)
                                                         .foregroundColor(Color.gray)
-                                                }
+                                                
+                                                
                                             }
                                         }
                                         .listRowBackground(functions.isDaytime ? Color.white : Color(red: 242/255, green: 242/255, blue: 242/255))
+                                    }
+                                    .onDelete { indexSet in
+                                        for index in indexSet {
+                                            let transaction = viewModel.transactions[index]
+                                            viewModel.deleteTransaction(transactionId: transaction.transactionId)
+                                        }
                                     }
                                     .scrollContentBackground(.hidden)
                                     .background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
@@ -86,9 +84,8 @@ struct HistoryView: View {
                 .navigationBarHidden(true)
             }
         }.onAppear {
-            Task {
-                await viewModel.getData()
-            }
+            
+            viewModel.listTransactions()
         }
     }
     
@@ -96,6 +93,7 @@ struct HistoryView: View {
     struct TransactionDetailView: View {
         let transaction: Transaction
         @StateObject private var functions = GlobalFunctions()
+        @StateObject private var viewModel = HistoryViewModel()
         
         var body: some View {
             VStack(){
@@ -109,19 +107,39 @@ struct HistoryView: View {
                     }
                 }.frame(maxWidth: 400, maxHeight: 60)
                 VStack() {
-                    Text("")
-                        .padding()
-                        .foregroundColor(functions.isDaytime ? Color.black : Color.white)
-                        .fontWeight(.bold)
-                        .font(.title2)
-                    Text("$\(String(format: "%.2f", "das"))")
-                        .font(.subheadline)
-                    Text("")
-                        .padding()
-                        .foregroundColor(Color.gray)
-                    // agragar foto de la transaccion
+                    VStack() {
+                            Text(transaction.name)
+                                .padding()
+                                .foregroundColor(Color.black)
+                                .fontWeight(.bold)
+                                .font(.headline)
+                            Text(transaction.source)
+                                .font(.subheadline)
+                                .foregroundColor(Color.black)
+                            Text("$\(String(format: "%.2f", transaction.amount))")
+                                .font(.subheadline)
+                                .foregroundColor(transaction.amount >= 0 ? .green : .red)
+                            Text("\(transaction.date.dateValue())")
+                                .padding()
+                                .foregroundColor(Color.gray)
+                          
+                        if let image = viewModel.storedImage {
+                            Image(uiImage: image)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 300, height: 350) // Set the size as per your requirements
+                        } else {
+                            Text("No Image Available")
+                        }
+                                
+                        }
                 }
                 Spacer()
+            }
+            .onAppear {
+                
+                //viewModel.loadImageFromDirectory(fileName: transaction.name)
+                viewModel.retrieveImage(fileName: transaction.transactionId)
             }
             .background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
         }

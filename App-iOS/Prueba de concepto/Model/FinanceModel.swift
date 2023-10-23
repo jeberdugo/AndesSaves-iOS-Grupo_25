@@ -6,13 +6,19 @@
 //
 
 import Foundation
+import Firebase
 
 
-struct TransactionA: Identifiable, Hashable {
-    var id = UUID()
-    var name: String
-    var amount: Double
-    var date: Date
+
+struct Transaction: Hashable {
+var amount: Float
+var category: String
+var date: Timestamp
+var imageUri: String
+var name: String
+var source: String
+var transactionId: String
+var type: String
 }
 
 struct AlertItem: Identifiable, Hashable {
@@ -47,12 +53,6 @@ struct Budget:Hashable {
     var percentage: String
 }
 
-struct IncomeIn:  Codable {
-    let amount: Int
-    let source: String
-    let user: String
-
-}
 
 struct Income: Decodable, Identifiable {
     var id : String?
@@ -62,50 +62,6 @@ struct Income: Decodable, Identifiable {
     let user: String
 }
 
-struct Transaction: Decodable, Identifiable {
-    var id : String?
-    
-
-    
-    struct Income: Decodable, Identifiable {
-        var id : String?
-        let _id: String?
-        let amount: Int
-        let date: Date
-        let source: String
-        let user: String
-
-    }
-    
-    struct Expense: Decodable , Identifiable{
-        var id : String?
-        let _id: String?
-        let amount: Int
-        let date: Date
-        let category: String
-        let description: String
-        let user: String
-        let isRecurring: Bool
-        let recurrenceType: String?
-        let recurrenceEndDate: String?
-    }
-
-    let _id: String
-    let income: Income?
-    let expense: Expense?
-    let user: String
-}
-
-struct TransactionsResponse: Decodable {
-    let transactions: [Transaction]
-    enum CodingKeys: String, CodingKey {
-            case transactions
-        }
-    init(from decoder: Decoder) throws {
-           let container = try decoder.container(keyedBy: CodingKeys.self)
-           self.transactions = try container.decode([Transaction].self, forKey: .transactions)
-       }
-}
 
 struct Category: Codable {
     var name: String
@@ -113,7 +69,6 @@ struct Category: Codable {
 }
 
 struct CategoryWithId: Codable {
-    var id: String
     var name: String
-    var user: String
+    var categoryId: String
 }
