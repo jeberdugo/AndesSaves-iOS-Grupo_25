@@ -228,6 +228,7 @@ final class HistoryViewModel: ObservableObject {
                             let transaction = Transaction(amount: amount, category: category, date: date, imageUri: imageUri, name: name, source: source, transactionId: transactionId, type: type)
                             self.transactions.append(transaction)
                 }
+                    self.expensesByMonth()
             }
             }
         }
@@ -313,6 +314,38 @@ final class HistoryViewModel: ObservableObject {
         }
     }
    
+    @Published var expensesByCategories: [ExpenseByCategory] = []
+   
+    func expensesByMonth() {
+        // Create an empty dictionary to store expenses by category
+        var expensesByCategoryDict: [String: Float] = [:]
+
+        // Iterate through the transactions
+        for transaction in self.transactions {
+            if transaction.type == "Expense" {
+                let category = transaction.category
+                let amount = transaction.amount
+                print(category)
+
+                // Check if the category is already in the dictionary
+                if let existingAmount = expensesByCategoryDict[category] {
+                    // If it exists, add the amount to the existing value
+                    expensesByCategoryDict[category] = existingAmount + amount
+                } else {
+                    // If it doesn't exist, initialize it with the amount
+                    expensesByCategoryDict[category] = amount
+                }
+            }
+        }
+
+        // Convert the dictionary to an array of ExpenseByCategory
+        let expensesByCategoryArray = expensesByCategoryDict.map { (category, amount) in
+            return ExpenseByCategory(category: category, amount: abs(amount))
+        }
+
+        // Update the expensesByCategories property with the calculated values
+        self.expensesByCategories = expensesByCategoryArray
+    }
 }
 
 
@@ -447,6 +480,7 @@ final class TagsViewModel: ObservableObject {
 final class SummaryViewModel: ObservableObject {
     
 }
+
 
 final class RegisterViewModel: ObservableObject {
     @Published var isRegistered = false

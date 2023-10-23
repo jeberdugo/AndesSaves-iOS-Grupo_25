@@ -8,7 +8,11 @@
 import Foundation
 import Firebase
 
-
+struct ExpenseByCategory: Identifiable {
+    var id = UUID()
+    var category: String
+    var amount: Float
+}
 
 struct Transaction: Hashable {
 var amount: Float
