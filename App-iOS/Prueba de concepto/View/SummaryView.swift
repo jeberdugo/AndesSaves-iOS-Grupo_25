@@ -27,6 +27,13 @@ import Charts
                 Spacer()
                 VStack() {
                     List {
+                        Section(header: Text("Totals")) {
+                            ForEach(History.totals, id: \.type) { total in
+                                                    TotalRow(total: total)
+                                                }
+                                            }
+
+                        
                         Text("Total expenses by category")
                             .font(.headline)
                             .fontWeight(.bold)
@@ -45,6 +52,7 @@ import Charts
                                 .font(.subheadline)
                                 .foregroundColor(.gray)
                         }
+                        // Here
                     }
                 }
             }
@@ -54,4 +62,19 @@ import Charts
             .background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
         }
     }
+
+struct TotalRow: View {
+    var total: Total
+
+    var body: some View {
+        HStack {
+            Text(total.type)
+                .font(.headline)
+                .fontWeight(.bold)
+                .foregroundColor(total.type == "Expenses" ? .red : .green)
+            Spacer()
+            Text(String(format: "$%.2f", total.amount))
+        }
+    }
+}
     

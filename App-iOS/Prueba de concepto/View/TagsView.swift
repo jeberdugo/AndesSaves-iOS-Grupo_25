@@ -167,11 +167,16 @@ struct AddTagDialog: View {
                 .padding()
                 Spacer()
                 Button(action: {
+                    print(viewModel.expenseCategories)
+                    if viewModel.expenseCategories.count < 5{
                         // Llama a la función para agregar la nueva etiqueta
                         viewModel.createCategory(name: tagName)
                         viewModel.listCategories()
                         // Cierra el diálogo
                         isPresented = false
+                    }else{
+                        showAlert = true
+                    }
                     
                 }) {
                     Text("Save")

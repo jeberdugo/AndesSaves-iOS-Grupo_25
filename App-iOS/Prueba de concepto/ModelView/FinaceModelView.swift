@@ -229,6 +229,7 @@ final class HistoryViewModel: ObservableObject {
                             self.transactions.append(transaction)
                 }
                     self.expensesByMonth()
+                    self.calculateTotals()
             }
             }
         }
@@ -346,6 +347,35 @@ final class HistoryViewModel: ObservableObject {
         // Update the expensesByCategories property with the calculated values
         self.expensesByCategories = expensesByCategoryArray
     }
+    
+    @Published var totals: [Total] = [
+        Total(type: "Expenses", amount: 0),
+        Total(type: "Incomes", amount: 0)]
+    
+    
+    
+    func calculateTotals(){
+
+        var expenseTotal: Float = 0
+           var incomeTotal: Float = 0
+
+           for transaction in self.transactions {
+               if transaction.type == "Expense" {
+                   expenseTotal += transaction.amount
+               } else if transaction.type == "Income" {
+                   incomeTotal += transaction.amount
+               }
+           }
+
+           // Update the totals array
+           if let expenseIndex = self.totals.firstIndex(where: { $0.type == "Expenses" }) {
+               self.totals[expenseIndex].amount = expenseTotal
+           }
+           if let incomeIndex = self.totals.firstIndex(where: { $0.type == "Incomes" }) {
+               self.totals[incomeIndex].amount = incomeTotal
+           }
+    }
+    
 }
 
 
