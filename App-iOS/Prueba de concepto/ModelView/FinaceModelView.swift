@@ -11,6 +11,7 @@ import SwiftUI
 import Firebase
 import FirebaseStorage
 import CoreMotion
+import Network
 
 final class ContentViewModel: ObservableObject {
     @Published public var isAddingTransaction = false
@@ -598,7 +599,27 @@ final class AccountsViewModel: ObservableObject {
     ]
 
     @Published public var selectedAccountURL: WebSheetItem? = nil
+    @Published public var isAlertShowing = false
 }
+
+
+
+class NetworkMonitor: ObservableObject {
+    @Published var isConnected = true
+    private let monitor = NWPathMonitor()
+    
+    init() {
+        monitor.pathUpdateHandler = { [weak self] path in
+            DispatchQueue.main.async {
+                self?.isConnected = path.status == .satisfied
+            }
+        }
+        let queue = DispatchQueue(label: "NetworkMonitor")
+        monitor.start(queue: queue)
+    }
+}
+
+
 
 final class SettingsViewModel: ObservableObject {
     @Published public var isLoggingOut = false
