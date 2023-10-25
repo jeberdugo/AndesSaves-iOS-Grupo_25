@@ -38,18 +38,18 @@ struct HistoryView: View {
                                 .edgesIgnoringSafeArea(.all)
                             
                             VStack {
-                                Spacer(minLength: 40)
-                                List {
-                                    ForEach(viewModel.transactions, id: \.self) { transaction in
-                                        NavigationLink(
-                                            destination: TransactionDetailView(transaction: transaction)
-                                        ) {
-                                            VStack(alignment: .leading) {
-                                                
+                                if !viewModel.transactions.isEmpty{
+                                    List {
+                                        ForEach(viewModel.transactions, id: \.self) { transaction in
+                                            NavigationLink(
+                                                destination: TransactionDetailView(transaction: transaction)
+                                            ) {
+                                                VStack(alignment: .leading) {
+                                                    
                                                     Text(transaction.name)
                                                         .font(.headline)
                                                         .foregroundColor(Color.black)
-                                                
+                                                    
                                                     Text(transaction.source)
                                                         .font(.subheadline)
                                                         .foregroundColor(Color.black)
@@ -61,20 +61,27 @@ struct HistoryView: View {
                                                     Text(viewModel.formatDate(transaction.date.dateValue()))
                                                         .font(.subheadline)
                                                         .foregroundColor(Color.gray)
-                                                
-                                                
+                                                    
+                                                    
+                                                }
+                                            }
+                                            .listRowBackground(functions.isDaytime ? Color.white : Color(red: 242/255, green: 242/255, blue: 242/255))
+                                        }
+                                        .onDelete { indexSet in
+                                            for index in indexSet {
+                                                let transaction = viewModel.transactions[index]
+                                                viewModel.deleteTransaction(transactionId: transaction.transactionId)
                                             }
                                         }
-                                        .listRowBackground(functions.isDaytime ? Color.white : Color(red: 242/255, green: 242/255, blue: 242/255))
+                                        .scrollContentBackground(.hidden)
+                                        .background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
                                     }
-                                    .onDelete { indexSet in
-                                        for index in indexSet {
-                                            let transaction = viewModel.transactions[index]
-                                            viewModel.deleteTransaction(transactionId: transaction.transactionId)
-                                        }
-                                    }
-                                    .scrollContentBackground(.hidden)
-                                    .background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
+                                }else{
+                                        Spacer()
+                                        Text("No transaction has been created")
+                                            .font(.subheadline)
+                                            .foregroundColor(.gray)
+                                        Spacer()
                                 }
                             }
                         }

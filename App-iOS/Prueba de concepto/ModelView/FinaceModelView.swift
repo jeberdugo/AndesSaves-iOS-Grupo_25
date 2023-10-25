@@ -86,6 +86,36 @@ final class ContentViewModel: ObservableObject {
         }
     }
     
+    func fetchUser(){
+        if let user = Auth.auth().currentUser {
+            let db = Firestore.firestore()
+            let usersCollection = db.collection("users")
+            
+
+            usersCollection.getDocuments { (snapshot, error) in
+                guard error == nil else {
+                    print(error!.localizedDescription)
+                    return
+                }
+                
+                if let snapshot = snapshot {
+                    for document in snapshot.documents{
+                            let data = document.data()
+                            let id = data["userId"] as? String ?? ""
+                        if  id == user.uid{
+                            self.balance = data["balance"] as? Float ?? 0
+                            print(self.balance)
+                            let email = data["email"] as? String ?? ""
+                            let name = data["name"] as? String ?? ""
+                            let phone = data["phone"] as? String ?? ""
+                            let userId = data["userId"] as? String ?? ""
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
     
     func saveImageFromDirectory(fileName: String, image: UIImage?){
         
@@ -198,6 +228,8 @@ final class HistoryViewModel: ObservableObject {
                             let transaction = Transaction(amount: amount, category: category, date: date, imageUri: imageUri, name: name, source: source, transactionId: transactionId, type: type)
                             self.transactions.append(transaction)
                 }
+                    self.expensesByMonth()
+                    self.calculateTotals()
             }
             }
         }
@@ -283,6 +315,67 @@ final class HistoryViewModel: ObservableObject {
         }
     }
    
+    @Published var expensesByCategories: [ExpenseByCategory] = []
+   
+    func expensesByMonth() {
+        // Create an empty dictionary to store expenses by category
+        var expensesByCategoryDict: [String: Float] = [:]
+
+        // Iterate through the transactions
+        for transaction in self.transactions {
+            if transaction.type == "Expense" {
+                let category = transaction.category
+                let amount = transaction.amount
+                print(category)
+
+                // Check if the category is already in the dictionary
+                if let existingAmount = expensesByCategoryDict[category] {
+                    // If it exists, add the amount to the existing value
+                    expensesByCategoryDict[category] = existingAmount + amount
+                } else {
+                    // If it doesn't exist, initialize it with the amount
+                    expensesByCategoryDict[category] = amount
+                }
+            }
+        }
+
+        // Convert the dictionary to an array of ExpenseByCategory
+        let expensesByCategoryArray = expensesByCategoryDict.map { (category, amount) in
+            return ExpenseByCategory(category: category, amount: abs(amount))
+        }
+
+        // Update the expensesByCategories property with the calculated values
+        self.expensesByCategories = expensesByCategoryArray
+    }
+    
+    @Published var totals: [Total] = [
+        Total(type: "Expenses", amount: 0),
+        Total(type: "Incomes", amount: 0)]
+    
+    
+    
+    func calculateTotals(){
+
+        var expenseTotal: Float = 0
+           var incomeTotal: Float = 0
+
+           for transaction in self.transactions {
+               if transaction.type == "Expense" {
+                   expenseTotal += transaction.amount
+               } else if transaction.type == "Income" {
+                   incomeTotal += transaction.amount
+               }
+           }
+
+           // Update the totals array
+           if let expenseIndex = self.totals.firstIndex(where: { $0.type == "Expenses" }) {
+               self.totals[expenseIndex].amount = expenseTotal
+           }
+           if let incomeIndex = self.totals.firstIndex(where: { $0.type == "Incomes" }) {
+               self.totals[incomeIndex].amount = incomeTotal
+           }
+    }
+    
 }
 
 
@@ -418,6 +511,7 @@ final class SummaryViewModel: ObservableObject {
     
 }
 
+
 final class RegisterViewModel: ObservableObject {
     @Published var isRegistered = false
     @Published var message = ""
@@ -548,7 +642,6 @@ final class SettingsViewModel: ObservableObject {
                             let id = data["userId"] as? String ?? ""
                         if  id == user.uid{
                             self.balance = data["balance"] as? Float ?? 0
-                            print(self.balance)
                             self.email = data["email"] as? String ?? ""
                             self.name = data["name"] as? String ?? ""
                             self.phone = data["phone"] as? String ?? ""
