@@ -515,6 +515,14 @@ final class SummaryViewModel: ObservableObject {
 final class RegisterViewModel: ObservableObject {
     @Published var isRegistered = false
     @Published var message = ""
+    @Published var email = ""
+    @Published var name = ""
+    @Published var phone = ""
+    @Published var password = ""
+    @Published var passwordConfirmation = ""
+    @Published var showNextView = false
+    @Published var phoneRegex = #"^\d{10}$"#
+    @Published var isPhoneNumberValid = true
     
     func register(name: String, phoneNumber: String, password: String, passwordConfirmation: String, email: String) {
         self.isRegistered = false
