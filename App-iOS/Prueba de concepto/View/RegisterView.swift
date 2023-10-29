@@ -32,6 +32,11 @@ struct RegisterView: View {
                             .textFieldStyle(PlainTextFieldStyle())
                             .padding(.horizontal, 10)
                             .autocapitalization(.none)
+                            .onChange(of: viewModel.email) { newValue in
+                            if newValue.count > 30 {
+                                viewModel.email = String(newValue.prefix(30))
+                            }
+                        }
                     }
                     .padding()
                     
@@ -47,6 +52,11 @@ struct RegisterView: View {
                         TextField("Name", text: $viewModel.name)
                             .textFieldStyle(PlainTextFieldStyle())
                             .padding(.horizontal, 10)
+                            .onChange(of: viewModel.name) { newValue in
+                            if newValue.count > 30 {
+                                viewModel.name = String(newValue.prefix(30))
+                            }
+                        }
                     }
                     .padding()
                     
@@ -63,6 +73,9 @@ struct RegisterView: View {
                             .textFieldStyle(PlainTextFieldStyle())
                             .padding(.horizontal, 10)
                             .onChange(of: viewModel.phone) { newValue in
+                                if newValue.count > 10 {
+                                    viewModel.phone = String(newValue.prefix(10))
+                                    }
                                 viewModel.isPhoneNumberValid = NSPredicate(format: "SELF MATCHES %@", viewModel.phoneRegex).evaluate(with: newValue)
                             }
                     }
@@ -80,6 +93,11 @@ struct RegisterView: View {
                         SecureField("Password", text: $viewModel.password)
                             .textFieldStyle(PlainTextFieldStyle())
                             .padding(.horizontal, 10)
+                            .onChange(of: viewModel.password) { newValue in
+                                                if newValue.count > 30 {
+                                                    viewModel.password = String(newValue.prefix(30))
+                                                }
+                                            }
                     }
                     .padding()
                     
@@ -96,6 +114,11 @@ struct RegisterView: View {
                         SecureField("Confirm Password", text: $viewModel.passwordConfirmation)
                             .textFieldStyle(PlainTextFieldStyle())
                             .padding(.horizontal, 10)
+                            .onChange(of: viewModel.passwordConfirmation) { newValue in
+                                                if newValue.count > 30 {
+                                                    viewModel.passwordConfirmation = String(newValue.prefix(30))
+                                                }
+                                            }
                     }
                     .padding()
                     

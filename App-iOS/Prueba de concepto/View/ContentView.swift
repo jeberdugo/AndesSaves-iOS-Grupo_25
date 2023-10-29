@@ -179,8 +179,25 @@ struct AddTransactionView: View {
             Form {
                 Section(header: Text("Transaction Details")) {
                     TextField("Name", text: $viewModel.transactionName)
+                        .onChange(of: viewModel.transactionName) { newValue in
+                        if newValue.count > 30 {
+                            viewModel.transactionName = String(newValue.prefix(30))
+                            }
+                        }
                     TextField("Amount", text: $viewModel.transactionAmount)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .keyboardType(.decimalPad)
+                        .onChange(of: viewModel.transactionAmount) { newValue in
+                            if newValue.count > 24 {
+                                viewModel.transactionAmount = String(newValue.prefix(10))
+                            }
+                        }
                     TextField("Source", text: $viewModel.transactionSource)
+                        .onChange(of: viewModel.transactionSource) { newValue in
+                            if newValue.count > 30 {
+                                viewModel.transactionSource = String(newValue.prefix(30))
+                            }
+                        }
                 }
                 
                 Section(header: Text("Type")) {
