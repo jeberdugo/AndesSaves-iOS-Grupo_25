@@ -52,9 +52,12 @@ struct WebSheetItem: Identifiable {
 }
 
 struct Budget:Hashable {
+    var documentID: String?
     var name: String
-    var date: String
-    var percentage: String
+    var date: Date
+    var total: Float
+    var contributions: Float
+    var type: Float
 }
 
 
