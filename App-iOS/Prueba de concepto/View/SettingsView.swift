@@ -157,6 +157,7 @@ struct SettingsView: View {
                  */
             }
         }
+        .listStyle(PlainListStyle())
         .onAppear {
             
             viewModel.fetchUser()
@@ -177,6 +178,7 @@ struct SectionView: View {
             Spacer()
         }
         .frame(height: 40)
+        
     }
 }
 

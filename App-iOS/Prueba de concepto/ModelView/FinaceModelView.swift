@@ -416,6 +416,12 @@ final class TagsViewModel: ObservableObject {
         @Published var isAddTagDialogPresented = false
         @Published var newTagName = ""
         let loginViewModel: LoginViewModel = LoginViewModel()
+    
+        @Published var tagCount: Int = UserDefaults.standard.integer(forKey: "tagCount") {
+            didSet {
+                UserDefaults.standard.set(tagCount, forKey: "tagCount")
+            }
+        }
 
         // Función para agregar una nueva etiqueta
         func addNewTag(_ tagName: String) {
@@ -442,16 +448,18 @@ final class TagsViewModel: ObservableObject {
                             print("Error adding transaction: \(error.localizedDescription)")
                         } else {
                             print("Transaction added with ID: \(ref!.documentID)")
-                            
                         }
                     }
                 }
+            listCategories()
+            //objectWillChange.send()
             }
     
     
     func listCategories() {
         categoriesWithId.removeAll()
         self.expenseCategories.removeAll()
+        self.tagCount = 0
         if let user = Auth.auth().currentUser {
             let db = Firestore.firestore()
             let categoriesCollection = db.collection("users").document(user.uid).collection("tags")
@@ -473,6 +481,7 @@ final class TagsViewModel: ObservableObject {
                             let category = CategoryWithId(name: name, categoryId: categoryId )
                             self.categoriesWithId.append(category)
                             self.expenseCategories.append(name)
+                            self.tagCount += 1
                 }
             }
             }
@@ -515,6 +524,14 @@ final class SummaryViewModel: ObservableObject {
 final class RegisterViewModel: ObservableObject {
     @Published var isRegistered = false
     @Published var message = ""
+    @Published var email = ""
+    @Published var name = ""
+    @Published var phone = ""
+    @Published var password = ""
+    @Published var passwordConfirmation = ""
+    @Published var showNextView = false
+    @Published var phoneRegex = #"^\d{10}$"#
+    @Published var isPhoneNumberValid = true
     
     func register(name: String, phoneNumber: String, password: String, passwordConfirmation: String, email: String) {
         self.isRegistered = false
