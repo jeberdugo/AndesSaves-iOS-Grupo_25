@@ -2,13 +2,11 @@ import SwiftUI
 
 struct RegisterView: View {
     @StateObject private var viewModel = RegisterViewModel()
-    @State private var email = ""
-    @State private var name = ""
-    @State private var phone = ""
-    @State private var password = ""
-    @State private var passwordConfirmation = ""
-    @State private var showNextView = false
     @StateObject private var functions = GlobalFunctions()
+    
+    var isAnyFieldEmpty: Bool {
+        return viewModel.email.isEmpty || viewModel.name.isEmpty || viewModel.phone.isEmpty || viewModel.password.isEmpty || viewModel.passwordConfirmation.isEmpty
+    }
     
     var body: some View {
         NavigationView {
@@ -30,10 +28,15 @@ struct RegisterView: View {
                         
                           
                         
-                        TextField("Email", text: $email)
+                        TextField("Email", text: $viewModel.email)
                             .textFieldStyle(PlainTextFieldStyle())
                             .padding(.horizontal, 10)
                             .autocapitalization(.none)
+                            .onChange(of: viewModel.email) { newValue in
+                            if newValue.count > 30 {
+                                viewModel.email = String(newValue.prefix(30))
+                            }
+                        }
                     }
                     .padding()
                     
@@ -46,9 +49,14 @@ struct RegisterView: View {
                                     .stroke(Color(hex: "C6C6C6"), lineWidth: 1) // Set your desired border color and width
                             )
                         
-                        TextField("Name", text: $name)
+                        TextField("Name", text: $viewModel.name)
                             .textFieldStyle(PlainTextFieldStyle())
                             .padding(.horizontal, 10)
+                            .onChange(of: viewModel.name) { newValue in
+                            if newValue.count > 30 {
+                                viewModel.name = String(newValue.prefix(30))
+                            }
+                        }
                     }
                     .padding()
                     
@@ -61,9 +69,15 @@ struct RegisterView: View {
                                     .stroke(Color(hex: "C6C6C6"), lineWidth: 1) // Set your desired border color and width
                             )
                         
-                        TextField("Phone", text: $phone)
+                        TextField("Phone", text: $viewModel.phone)
                             .textFieldStyle(PlainTextFieldStyle())
                             .padding(.horizontal, 10)
+                            .onChange(of: viewModel.phone) { newValue in
+                                if newValue.count > 10 {
+                                    viewModel.phone = String(newValue.prefix(10))
+                                    }
+                                viewModel.isPhoneNumberValid = NSPredicate(format: "SELF MATCHES %@", viewModel.phoneRegex).evaluate(with: newValue)
+                            }
                     }
                     .padding()
                     
@@ -76,9 +90,14 @@ struct RegisterView: View {
                                     .stroke(Color(hex: "C6C6C6"), lineWidth: 1) // Set your desired border color and width
                             )
                         
-                        SecureField("Password", text: $password)
+                        SecureField("Password", text: $viewModel.password)
                             .textFieldStyle(PlainTextFieldStyle())
                             .padding(.horizontal, 10)
+                            .onChange(of: viewModel.password) { newValue in
+                                                if newValue.count > 30 {
+                                                    viewModel.password = String(newValue.prefix(30))
+                                                }
+                                            }
                     }
                     .padding()
                     
@@ -92,14 +111,29 @@ struct RegisterView: View {
                             )
                         
                         
-                        SecureField("Confirm Password", text: $passwordConfirmation)
+                        SecureField("Confirm Password", text: $viewModel.passwordConfirmation)
                             .textFieldStyle(PlainTextFieldStyle())
                             .padding(.horizontal, 10)
+                            .onChange(of: viewModel.passwordConfirmation) { newValue in
+                                                if newValue.count > 30 {
+                                                    viewModel.passwordConfirmation = String(newValue.prefix(30))
+                                                }
+                                            }
                     }
                     .padding()
                     
                     Button(action: {
-                           viewModel.register(name: self.name, phoneNumber: self.phone, password: self.password, passwordConfirmation: self.passwordConfirmation, email: self.email)
+                        if isAnyFieldEmpty {
+                                // Show an alert indicating that a field is empty
+                                viewModel.message = "Please fill in all fields."
+                                viewModel.isRegistered = true
+                        } else if !viewModel.isPhoneNumberValid {
+                                viewModel.message = "Please enter a valid phone number."
+                                viewModel.isRegistered = true
+                            }else {
+                                // All fields are filled, proceed with registration
+                                viewModel.register(name: viewModel.name, phoneNumber: viewModel.phone, password: viewModel.password, passwordConfirmation: viewModel.passwordConfirmation, email: viewModel.email)
+                            }
                         
                     }) {
                         Text("Register")
@@ -128,3 +162,4 @@ struct RegisterView: View {
                 }
             }
         }
+

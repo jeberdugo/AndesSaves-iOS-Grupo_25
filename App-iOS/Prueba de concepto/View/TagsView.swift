@@ -167,11 +167,15 @@ struct AddTagDialog: View {
                 .padding()
                 Spacer()
                 Button(action: {
+                    print(viewModel.tagCount)
+                    if viewModel.tagCount < 5{
                         // Llama a la función para agregar la nueva etiqueta
                         viewModel.createCategory(name: tagName)
-                        viewModel.listCategories()
                         // Cierra el diálogo
                         isPresented = false
+                    }else{
+                        showAlert = true
+                    }
                     
                 }) {
                     Text("Save")
@@ -196,5 +200,8 @@ struct AddTagDialog: View {
         .padding()
         Spacer()
         }.background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
+        .onDisappear {
+                tagName = ""
+            }
     }
 }
