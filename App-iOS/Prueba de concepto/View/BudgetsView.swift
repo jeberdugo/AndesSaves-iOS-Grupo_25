@@ -6,52 +6,36 @@
 //
 
 import SwiftUI
+import FirebaseFirestore
 
 
 
 // Vista para "Budgets"
 struct BudgetsView: View {
-    
-    
     @State private var dataArray: [Budget] = []
-
-    /*@State private var dataArray: [Budget] = [
-        Budget(name: "House", date: "2023-09-25", percentage: "60%"),
-        Budget(name: "Car", date: "2023-10-01", percentage: "80%"),
-        Budget(name: "Bike", date: "2023-10-02", percentage: "40%"),
-        Budget(name: "Boat", date: "2023-10-03", percentage: "70%")
-    ]*/
-    @State private var dataArrayGroup: [Budget] = [
-        Budget(name: "House", date: "2023-09-25", percentage: "60%"),
-        Budget(name: "Car", date: "2023-10-01", percentage: "80%"),
-        Budget(name: "Bike", date: "2023-10-02", percentage: "40%"),
-        Budget(name: "Boat", date: "2023-10-03", percentage: "70%")
-    ]
+    //@State private var dataArray: [BudgetsViewModel.Budget] = []
     @State private var isAddBudgetViewPresented = false
-      @StateObject private var functions = GlobalFunctions()
+    @StateObject private var functions = GlobalFunctions()
+    @StateObject private var viewModel = BudgetsViewModel()
     
-    // Function to fetch budget data
-        func fetchBudgetData() {
-            BudgetsViewModel().fetchBudgets { budgets in
-                    if let budgets = budgets {
-                        // Update the dataArray with the fetched data
-                        dataArray = budgets.map { budget in
-                            // Transform the fetched data into the Budget struct
-                            return Budget(name: budget.name, date: formatDate(budget.date), percentage: "\(budget.total)%")
-                        }
-                    } else {
-                        // Handle the case where budgets is nil (error case)
-                        print("Budgets array is nil")
-                    }
-                }
-        }
+    
 
-        // Helper function to format the date
-        func formatDate(_ date: Date) -> String {
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "yyyy-MM-dd"
-            return dateFormatter.string(from: date)
+    func convertViewModelBudgets(_ viewModelBudgets: [BudgetsViewModel.Budget]) -> [Budget] {
+        return viewModelBudgets.map { viewModelBudget in
+            return Budget(documentID: viewModelBudget.documentID, name: viewModelBudget.name, date: viewModelBudget.date, total: viewModelBudget.total, contributions: viewModelBudget.contributions, type: Float(Int(viewModelBudget.type)))
         }
+    }
+    
+    func fetchBudgetData() {
+        viewModel.fetchBudgets { viewModelBudgets in
+            if let viewModelBudgets = viewModelBudgets {
+                dataArray = convertViewModelBudgets(viewModelBudgets)
+                //dataArray = viewModelBudgets
+            }
+        }
+    }
+    
+    
 
     var body: some View {
         
@@ -64,59 +48,64 @@ struct BudgetsView: View {
                     .foregroundColor(.white)
             }
         }.frame(maxWidth: 400, maxHeight: 60)
-        Spacer()
+        //
         VStack(){
-        VStack {
-            HStack(spacing: 30) {
-                
-                NavigationLink(destination: AddBudgetView(), isActive: $isAddBudgetViewPresented) {
-                    EmptyView()
-                }
-                
-                Button(action: {
-                    isAddBudgetViewPresented.toggle()
-                }) {
+            Spacer()
+            VStack {
+                HStack(spacing: 30) {
+                    
+                    NavigationLink(destination: AddBudgetView(), isActive: $isAddBudgetViewPresented) {
+                        EmptyView()
+                    }
+                    
+                    Button(action: {
+                        isAddBudgetViewPresented.toggle()
+                    }) {
+                        VStack {
+                            
+                            Image(systemName: "plus.rectangle.fill")
+                                .resizable()
+                                .frame(width: 40, height: 40) // Increase size
+                                .foregroundColor(.green) // Set color to green
+                                .background(Color.white.opacity(0.2)) // Background color
+                                .cornerRadius(5)
+                            Text("Add")
+                                .foregroundColor(functions.isDaytime ? Color.blue : Color.white)
+                        }}
+                    
+                    
                     VStack {
-                        
-                        Image(systemName: "plus.rectangle.fill")
+                        Image(systemName: "minus.rectangle.fill")
                             .resizable()
                             .frame(width: 40, height: 40) // Increase size
-                            .foregroundColor(.green) // Set color to green
+                            .foregroundColor(.red) // Set color to red
                             .background(Color.white.opacity(0.2)) // Background color
                             .cornerRadius(5)
-                        Text("Add")
+                        Text("Remove")
                             .foregroundColor(functions.isDaytime ? Color.blue : Color.white)
-                    }}
-                
-                
-                VStack {
-                    Image(systemName: "minus.rectangle.fill")
-                        .resizable()
-                        .frame(width: 40, height: 40) // Increase size
-                        .foregroundColor(.red) // Set color to red
-                        .background(Color.white.opacity(0.2)) // Background color
-                        .cornerRadius(5)
-                    Text("Remove")
-                        .foregroundColor(functions.isDaytime ? Color.blue : Color.white)
+                    }
+                    .onTapGesture {
+                        // Remove action logic here
+                    }
                 }
-                .onTapGesture {
-                    // Remove action logic here
-                }
-            }
-            .padding(.horizontal)
-            
-            // Section: Individual
-            Text("Individual")
-                .font(.title2)
-                .fontWeight(.bold)
-                .padding(.top, 20)
-                .foregroundColor(functions.isDaytime ? Color.black : Color.white)
-            List {
-                ForEach(self.dataArray, id: \.self) { item in
-                    ItemRow(name: item.name, date: item.date, percentage: item.percentage)
+                .padding(.horizontal)
+                
+                // Section: Individual
+                Text("Individual")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .padding(.top, 20)
+                    .foregroundColor(functions.isDaytime ? Color.black : Color.white)
+                List {
+                    ForEach(dataArray.filter { $0.type == 0 }, id: \.self) { item in
+                        NavigationLink(destination: BudgetItemDetailView(budget: item)) {
+                            ItemRow(name: item.name, date: item.date, total: item.total,contributions: item.contributions)}
+                    
+                        }.onDelete(perform: delete)
                         
-                }.onDelete(perform: delete)
-                .foregroundColor(functions.isDaytime ? Color.black : Color.white)            }
+                        
+                }
+                
             
             
             
@@ -128,12 +117,13 @@ struct BudgetsView: View {
                 .foregroundColor(functions.isDaytime ? Color.black : Color.white)
             
             List {
-                ForEach(self.dataArrayGroup, id: \.self) { item in
-                    ItemRow(name: item.name, date: item.date, percentage: item.percentage)
-                        
-                }.onDelete(perform: delete)
-                .foregroundColor(functions.isDaytime ? Color.black : Color.white)            }
-        }
+                ForEach(dataArray.filter { $0.type == 1 }, id: \.self) { item in
+                    NavigationLink(destination: BudgetItemDetailView(budget: item)) {
+                        ItemRow(name: item.name, date: item.date, total: item.total, contributions: item.contributions)}
+                    }.onDelete(perform: delete)
+                
+            }.foregroundColor(functions.isDaytime ? Color.black : Color.white)
+        }.foregroundColor(functions.isDaytime ? Color.black : Color.white)
         .onAppear {
                     fetchBudgetData()
                 }
@@ -148,33 +138,53 @@ struct BudgetsView: View {
 
 
 
-  struct ItemRow: View {
-      var name: String
-      var date: String
-      var percentage: String
+struct ItemRow: View {
+    @StateObject private var functions = GlobalFunctions()
+    var name: String
+    var date: Date
+    var total: Float
+    var contributions: Float
 
-      var body: some View {
-          HStack {
-              VStack{
-                  Text(name)
-                      .font(.headline)
-                      .frame(width: 100)
+    var body: some View {
+        HStack {
+            VStack {
+                Text(name)
+                    .font(.headline)
+                    .frame(width: 100)
 
-                  Text(date)
-                      .font(.subheadline)
-              }
+                Text(formatDate(date)) // Display the formatted date
+                    .font(.subheadline)
+                
+            }
 
+            Spacer()
+            
+            
 
-              Spacer()
+            if total != 0 {
+                let percentage = (contributions * 100) / total
+                // Now, use `percentage` to create the text
+                Text(String(format: "%.1f%%", percentage)).font(.subheadline)
+            } else {
+                // Handle the case when total is zero (division by zero)
+                Text("0%").font(.subheadline)
+            }
+                
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 5)
+        .background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
+    }
+    
+    // Function to format Date to String
+    func formatDate(_ date: Date) -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .short
+        dateFormatter.timeStyle = .none
+        return dateFormatter.string(from: date)
 
-              Text(percentage)
-                  .font(.subheadline)
-          }
-          .padding(.horizontal)
-          .padding(.vertical, 5)
-      }
-  }
-
+    }
+}
   struct BudgetsView_Previews: PreviewProvider {
       static var previews: some View {
           BudgetsView()
@@ -229,8 +239,8 @@ struct BudgetsView: View {
                   .foregroundColor(functions.isDaytime ? Color.black : Color.white)
               
               TextField("Enter amount", value: $budgetAmount, formatter: Self.formatter).keyboardType(.numberPad)
-                  .textFieldStyle(RoundedBorderTextFieldStyle())
-                  .padding(.horizontal)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                                .padding(.horizontal)
               
               Text("Date")
                   .font(.headline)
@@ -241,6 +251,7 @@ struct BudgetsView: View {
               DatePicker("", selection: $budgetDate, displayedComponents: .date)
                   .datePickerStyle(DefaultDatePickerStyle())
                   .padding(.horizontal)
+                  .foregroundColor(functions.isDaytime ? Color.black : Color.white)
               
               
               Text("Type")
@@ -277,7 +288,11 @@ struct BudgetsView: View {
               }
               
               Button(action: {
-                  viewModel.createBudget(name: budgetName, total: budgetAmount, date: budgetDate, type: selectedType)
+                  viewModel.createBudget(name: budgetName, total: Float(budgetAmount), date: budgetDate, type: selectedType)
+                  budgetName=""
+                  budgetAmount=0
+                  
+                  
               }) {
                   Text("Add")
                       .foregroundColor(.white)
@@ -299,95 +314,121 @@ struct BudgetsView: View {
   }
 
 
-
 struct BudgetItemDetailView: View {
-    var name: String
-    var date: String
-    var totalContributions: Double // Total contributions
-    var budgetAmount: Double // Budget amount
-    var contributions: [Double] // All contributions
-    @Binding var newContribution: String// Input for new contribution
-    
-    // Create a local non-optional variable
-    @State private var contributionInput: String = ""
+    @StateObject private var functions = GlobalFunctions()
+    var budget: Budget // The budget item to display
+    @ObservedObject var viewModel = BudgetsViewModel()
+    @State private var newContribution = 0
+    @Environment(\.presentationMode) var presentationMode
     
     
-            
-
+   
+    
+    
     var body: some View {
-        ZStack() {
-            Color(red: 21/255, green: 191/255, blue: 129/255).edgesIgnoringSafeArea(.all)
-            VStack {
-                Text(name)
-                    .font(.title)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-            }
-        }.frame(maxWidth: 400, maxHeight: 60)
+        
+            ZStack() {
+                Color(red: 21/255, green: 191/255, blue: 129/255).edgesIgnoringSafeArea(.all)
+                VStack {
+                    Text(budget.name)
+                        .font(.title)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                }
+            }.frame(maxWidth: 400, maxHeight: 60)
+            //Spacer()
+                ZStack {
+                    Circle()
+                        .stroke(lineWidth: 8.0)  // Decrease the line width to make the circle smaller
+                        .opacity(0.3)
+                        .foregroundColor(Color.gray)
+                        .frame(width: 130, height: 130)  // Adjust the frame size to control the circle's size
+                    
+                    Circle()
+                        .trim(from: 0.0, to: CGFloat(min(budget.contributions / budget.total, 1.0)))
+                        .stroke(style: StrokeStyle(lineWidth: 10.0, lineCap: .round, lineJoin: .round))
+                        .foregroundColor(Color.green)
+                        .rotationEffect(Angle(degrees: -90))
+                        .frame(width: 130, height: 130)  // Match the frame size with the outer circle
+                    
+                    if budget.total != 0 {
+                        let percentage = (budget.contributions * 100) / budget.total
+                        Text(String(format: "%.1f%%", percentage))
+                            .font(.title)
+                            .fontWeight(.bold)
+                    } else {
+                        Text("0%")
+                            .font(.title)
+                            .fontWeight(.bold)
+                    }
+                }
+                .padding()
+                
+                
+                Text("\(formatDate(budget.date))")
+                    .font(.headline)
+                    .padding()
+                    
+        
+                
+                Text("$ " + String(budget.contributions)+"/ $ " + String(budget.total))
+                    .font(.headline)
+                    .padding()
+                    
+                
+                
+                //Spacer()
+                
+                HStack {
+                    TextField("Enter amount", text: Binding(
+                        get: { String(newContribution) },
+                        set: {
+                            if let value = NumberFormatter().number(from: $0)?.intValue {
+                                newContribution = value
+                            }
+                        }
+                    ))
+                    .keyboardType(.numberPad)
+                    .font(.subheadline)
+                }
+                .padding()
+                .background(RoundedRectangle(cornerRadius: 10).stroke(Color.gray, lineWidth: 1))
+
+
+                
+                
+                Button(action: {
+                    viewModel.updateContributions(newContributions: Float(newContribution), documentID: budget.documentID ?? "", currentContributions: budget.contributions ) { success in
+                        if success {
+                            // Handle success
+                            newContribution=0
+                            presentationMode.wrappedValue.dismiss()
+                            
+                        } else {
+                            // Handle failure
+                        }
+                    }
+                }) {
+                    Text("Add Contribution")
+                        .foregroundColor(.green)
+                }.padding()
+            
+                
+            
+            
+                
+            
         Spacer()
         
-        VStack {
-            // Percentage Chart
-            ZStack {
-                Circle()
-                    .stroke(lineWidth: 15.0)
-                    .opacity(0.3)
-                    .foregroundColor(Color.gray)
-
-                Circle()
-                    .trim(from: 0.0, to: CGFloat(min(totalContributions / budgetAmount, 1.0)))
-                    .stroke(style: StrokeStyle(lineWidth: 15.0, lineCap: .round, lineJoin: .round))
-                    .foregroundColor(Color.green)
-                    .rotationEffect(Angle(degrees: -90))
-
-                Text("\(Int((totalContributions / budgetAmount) * 100))%")
-                    .font(.title)
-                    .fontWeight(.bold)
-            }
-            .padding()
-            
-
-            Text("\(date)")
-                .font(.subheadline)
-                .padding()
-            
-
-            Text("0/$\(totalContributions)")
-                .font(.subheadline)
-                .padding()
-
-            
-           
-
-            
-
-            // Input for New Contribution
-            TextField("Enter Contribution", text: $newContribution)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .keyboardType(.decimalPad)
-                .padding()
-
-            Button(action: {
-                //if let amount = Double(newContribution) {
-                  //      contributions.append(amount)
-                    //    newContribution = ""
-                    //}
-            }) {
-                Text("Add Contribution")
-                    .foregroundColor(.green)
-            }
-            .padding()
-
-            // History of Contributions
-            Text("Contributions History:")
-                .font(.headline)
-                .padding(.top)
-
-            List(contributions.map { String(format: "$%.2f", $0) }, id: \.self) { contribution in
-                Text(contribution)
-            }
-        }
-        //.navigationBarTitle(Text("Item Details"), displayMode: .inline)
+    }
+    
+    
+    func formatDate(_ date: Date) -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .short
+        dateFormatter.timeStyle = .none
+        return dateFormatter.string(from: date)
     }
 }
+
 
