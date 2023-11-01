@@ -31,6 +31,12 @@ var transactionId: String
 var type: String
 }
 
+struct Prediction: Hashable {
+var predicted_expense: Float
+var month: Int
+var year: Int
+}
+
 struct AlertItem: Identifiable, Hashable {
     var id = UUID()
     var message: String
