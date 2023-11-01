@@ -590,7 +590,7 @@ final class TagsViewModel: ObservableObject {
             
                     var ref: DocumentReference? = nil
                     let group = DispatchGroup()
-                    let timerDuration: TimeInterval = 1.5
+            let timerDuration: TimeInterval = 0.5
                     let dispatchTime = DispatchTime.now() + timerDuration
                     var receivedResponse = false
 
@@ -608,13 +608,11 @@ final class TagsViewModel: ObservableObject {
                                 self.expenseCategories.append(name)
                                 self.saveCategoriesToCache()
                                 self.savePendingActionsToCache()
-                                self.tagCount += 1
                             }
                         } else {
                             receivedResponse = true
                             group.leave()
                             print("Transaction added with ID: \(ref!.documentID)")
-                            self.tagCount += 1
                         }
                     }
                 }
@@ -624,46 +622,73 @@ final class TagsViewModel: ObservableObject {
     
     
     func listCategories() {
-        categoriesWithId.removeAll()
-        self.expenseCategories.removeAll()
-        self.tagCount = 0
-
+        // Load tags from cache (if available)
+        if let cachedCategories = UserDefaults.standard.data(forKey: "cachedCategories"),
+           let cachedCategoriesWithId = UserDefaults.standard.data(forKey: "cachedCategoriesWithId") {
+            if let decodedCategories = try? JSONDecoder().decode([String].self, from: cachedCategories),
+               let decodedCategoriesWithId = try? JSONDecoder().decode([CategoryWithId].self, from: cachedCategoriesWithId) {
+                DispatchQueue.main.async {
+                    self.expenseCategories = decodedCategories
+                    self.categoriesWithId = decodedCategoriesWithId
+                }
+            }
+        }
+        
+        // Fetch data from Firebase
         if let user = Auth.auth().currentUser {
             let db = Firestore.firestore()
             let categoriesCollection = db.collection("users").document(user.uid).collection("tags")
-            
-            let group = DispatchGroup()
-            let timerDuration: TimeInterval = 1
-            let dispatchTime = DispatchTime.now() + timerDuration
-            var receivedResponse = false
 
-            group.enter()
+            self.expenseCategories.removeAll { $0 == "Add" }
+            self.categoriesWithId.removeAll { $0.name == "Add" }
+            
             categoriesCollection.getDocuments { (snapshot, error) in
-                
-                if let error = error {
-                    DispatchQueue.global().asyncAfter(deadline: dispatchTime) {
-                        print(error.localizedDescription)
-                        self.saveCategoriesToCache()
-                    }
-                    return
-                }
-                
+                // Handle the data from Firebase
                 if let snapshot = snapshot {
-                    receivedResponse = true
+                    var categories = [String]()
+                    var categoriesWithId = [CategoryWithId]()
+
                     for document in snapshot.documents {
                         let data = document.data()
                         let name = data["name"] as? String ?? ""
                         let categoryId = document.documentID
+
                         let category = CategoryWithId(name: name, categoryId: categoryId)
-                        self.categoriesWithId.append(category)
-                        self.expenseCategories.append(name)
-                        self.tagCount += 1
+                        categoriesWithId.append(category)
+                        categories.append(name)
                     }
+                    
+                    let category = CategoryWithId(name: "Add", categoryId: "0")
+                                        categoriesWithId.append(category)
+
+                    // Update the UI on the main queue
+                    DispatchQueue.main.async {
+                        self.expenseCategories = categories
+                        self.categoriesWithId = categoriesWithId
+                        self.tagCount = self.expenseCategories.count
+
+                        // Save to cache
+                        if let categoriesData = try? JSONEncoder().encode(categories) {
+                            UserDefaults.standard.set(categoriesData, forKey: "cachedCategories")
+                        }
+
+                        if let categoriesWithIdData = try? JSONEncoder().encode(categoriesWithId) {
+                            UserDefaults.standard.set(categoriesWithIdData, forKey: "cachedCategoriesWithId")
+                        }
+                    }
+                } else {
+                    // Handle errors here
+                    print(error?.localizedDescription ?? "Unknown error")
                 }
             }
-        
         }
     }
+
+
+
+
+
+
 
     
     func deleteCategory(categoryId: String, name: String) {
@@ -675,7 +700,7 @@ final class TagsViewModel: ObservableObject {
             let categoryDocument = categoriesCollection.document(categoryId)
 
             // Set up a timer to trigger after approximately 3 seconds
-            let timerDuration: TimeInterval = 1.5
+            let timerDuration: TimeInterval = 0.5
             let dispatchTime = DispatchTime.now() + timerDuration
             var receivedResponse = false
 
@@ -707,7 +732,6 @@ final class TagsViewModel: ObservableObject {
                     
                     self.saveCategoriesToCache()
                     self.savePendingActionsToCache()
-                    self.tagCount -= 1
                 } else {
                     // The deletion was successful
                     print("Category deleted successfully")
@@ -715,7 +739,6 @@ final class TagsViewModel: ObservableObject {
                     // Optionally, remove the deleted category from your local array
                     if let index = self.categoriesWithId.firstIndex(where: { $0.categoryId == categoryId }) {
                         self.categoriesWithId.remove(at: index)
-                    self.tagCount -= 1
                     }
                 }
             }
