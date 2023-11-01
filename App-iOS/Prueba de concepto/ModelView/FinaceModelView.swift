@@ -512,7 +512,7 @@ final class TagsViewModel: ObservableObject {
             TagsItem(title: "Add", imageName: "Add")
         ]
     
-    @Published var expenseCategories:  [String] = []
+        @Published var expenseCategories:  [String] = []
     
         @Published var count = 0
 
@@ -537,85 +537,191 @@ final class TagsViewModel: ObservableObject {
         @Published var categoriesWithId = [CategoryWithId]()
         @Published var selectedCategoryId: String?
     
+        private let categoriesCacheKey = "categoriesCache"
+        private var isFetchingCategories = false
+    
+        private var pendingActions: [TagAction] = []
+    
+   
+       init() {
+           if let cachedCategoriesData = UserDefaults.standard.data(forKey: "cachedCategories") {
+               if let cachedCategories = try? JSONDecoder().decode([String].self, from: cachedCategoriesData) {
+                   self.expenseCategories = cachedCategories
+               }
+           }
+
+           if let cachedCategoriesWithIdData = UserDefaults.standard.data(forKey: "cachedCategoriesWithId") {
+               if let cachedCategoriesWithId = try? JSONDecoder().decode([CategoryWithId].self, from: cachedCategoriesWithIdData) {
+                   self.categoriesWithId = cachedCategoriesWithId
+               }
+           }
+       }
+    
+       private func saveCategoriesToCache() {
+           if let categoriesData = try? JSONEncoder().encode(self.expenseCategories) {
+               UserDefaults.standard.set(categoriesData, forKey: "cachedCategories")
+           }
+
+           if let categoriesWithIdData = try? JSONEncoder().encode(self.categoriesWithId) {
+               UserDefaults.standard.set(categoriesWithIdData, forKey: "cachedCategoriesWithId")
+           }
+       }
+    
+    private let pendingActionsCacheKey = "pendingActionsCache"
+
+    private func savePendingActionsToCache() {
+        if let data = try? JSONEncoder().encode(pendingActions) {
+            UserDefaults.standard.set(data, forKey: pendingActionsCacheKey)
+        }
+    }
+
+    private func loadPendingActionsFromCache() {
+        if let data = UserDefaults.standard.data(forKey: pendingActionsCacheKey),
+           let actions = try? JSONDecoder().decode([TagAction].self, from: data) {
+            pendingActions = actions
+        }
+    }
     
     func createCategory(name: String){
         let user = Auth.auth().currentUser
         if let user = user{
             let db = Firestore.firestore()
             let categoriesCollection = db.collection("users").document(user.uid).collection("tags")
-            // Create a new transaction document with a unique identifier
+            
                     var ref: DocumentReference? = nil
+                    let group = DispatchGroup()
+                    let timerDuration: TimeInterval = 1.5
+                    let dispatchTime = DispatchTime.now() + timerDuration
+                    var receivedResponse = false
+
+                    group.enter()
                     ref = categoriesCollection.addDocument(data: [
                         "name": name
                     ]) { error in
                         if let error = error {
-                            print("Error adding transaction: \(error.localizedDescription)")
+                            DispatchQueue.global().asyncAfter(deadline: dispatchTime) {
+                                print("Error adding transaction: \(error.localizedDescription)")
+                                let category = CategoryWithId(name: name, categoryId: "" )
+                                let action = TagAction(type: .add, name: name, categoryId: "")
+                                self.pendingActions.append(action)
+                                self.categoriesWithId.append(category)
+                                self.expenseCategories.append(name)
+                                self.saveCategoriesToCache()
+                                self.savePendingActionsToCache()
+                                self.tagCount += 1
+                            }
                         } else {
+                            receivedResponse = true
+                            group.leave()
                             print("Transaction added with ID: \(ref!.documentID)")
+                            self.tagCount += 1
                         }
                     }
                 }
             listCategories()
             //objectWillChange.send()
-            }
+        }
     
     
     func listCategories() {
         categoriesWithId.removeAll()
         self.expenseCategories.removeAll()
         self.tagCount = 0
+
         if let user = Auth.auth().currentUser {
             let db = Firestore.firestore()
             let categoriesCollection = db.collection("users").document(user.uid).collection("tags")
             
+            let group = DispatchGroup()
+            let timerDuration: TimeInterval = 1
+            let dispatchTime = DispatchTime.now() + timerDuration
+            var receivedResponse = false
 
+            group.enter()
             categoriesCollection.getDocuments { (snapshot, error) in
-                guard error == nil else {
-                    print(error!.localizedDescription)
+                
+                if let error = error {
+                    DispatchQueue.global().asyncAfter(deadline: dispatchTime) {
+                        print(error.localizedDescription)
+                        self.saveCategoriesToCache()
+                    }
                     return
                 }
                 
                 if let snapshot = snapshot {
-                    for document in snapshot.documents{
-                            let data = document.data()
-            
-                            let name = data["name"] as? String ?? ""
-                            let categoryId = document.documentID
-                            
-                            let category = CategoryWithId(name: name, categoryId: categoryId )
-                            self.categoriesWithId.append(category)
-                            self.expenseCategories.append(name)
-                            self.tagCount += 1
+                    receivedResponse = true
+                    for document in snapshot.documents {
+                        let data = document.data()
+                        let name = data["name"] as? String ?? ""
+                        let categoryId = document.documentID
+                        let category = CategoryWithId(name: name, categoryId: categoryId)
+                        self.categoriesWithId.append(category)
+                        self.expenseCategories.append(name)
+                        self.tagCount += 1
+                    }
                 }
             }
-            }
+        
         }
     }
+
     
-    
-    func deleteCategory(categoryId: String) {
-        if let user = Auth.auth().currentUser {
+    func deleteCategory(categoryId: String, name: String) {
+        let user = Auth.auth().currentUser
+        if let user = user {
             let db = Firestore.firestore()
             let categoriesCollection = db.collection("users").document(user.uid).collection("tags")
 
-            // Get a reference to the category document you want to delete
             let categoryDocument = categoriesCollection.document(categoryId)
 
-            // Delete the category document
+            // Set up a timer to trigger after approximately 3 seconds
+            let timerDuration: TimeInterval = 1.5
+            let dispatchTime = DispatchTime.now() + timerDuration
+            var receivedResponse = false
+
+            // Make the Firestore request
+            var deletionError: Error?
             categoryDocument.delete { error in
-                if let error = error {
+                receivedResponse = true
+                deletionError = error
+            }
+
+            // Introduce a delay before handling the response or using cached data
+            DispatchQueue.global().asyncAfter(deadline: dispatchTime) {
+                // This block will be executed after the specified delay (3 seconds)
+
+                if let error = deletionError {
+                    // Handle the case where an error occurred during deletion
                     print("Error deleting category: \(error.localizedDescription)")
-                } else {
-                    print("Category deleted successfully")
                     
+                    let category = CategoryWithId(name: name, categoryId: categoryId)
+                    let action = TagAction(type: .delete, name: name, categoryId: categoryId)
+                    self.pendingActions.append(action)
+                    
+                    if let index = self.categoriesWithId.firstIndex(where: { $0.name == name }) {
+                        self.categoriesWithId.remove(at: index)
+                    }
+                    if let index = self.expenseCategories.firstIndex(where: { $0 == name }) {
+                        self.expenseCategories.remove(at: index)
+                    }
+                    
+                    self.saveCategoriesToCache()
+                    self.savePendingActionsToCache()
+                    self.tagCount -= 1
+                } else {
+                    // The deletion was successful
+                    print("Category deleted successfully")
+
                     // Optionally, remove the deleted category from your local array
                     if let index = self.categoriesWithId.firstIndex(where: { $0.categoryId == categoryId }) {
                         self.categoriesWithId.remove(at: index)
+                    self.tagCount -= 1
                     }
                 }
             }
         }
     }
+
     
 }
 

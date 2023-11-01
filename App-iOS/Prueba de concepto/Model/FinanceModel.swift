@@ -85,3 +85,15 @@ struct CategoryWithId: Codable {
     var name: String
     var categoryId: String
 }
+
+enum TagActionType: String, Codable {
+    case add
+    case delete
+}
+
+struct TagAction: Codable {
+    let type: TagActionType
+    var name: String
+    var categoryId: String
+}
+
