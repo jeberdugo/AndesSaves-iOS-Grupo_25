@@ -27,7 +27,32 @@ import Charts
                 Spacer()
                 VStack() {
                     List {
-                        Section(header: Text("Totals")) {
+                        Section(header: Text("Balance Days")) {
+                            
+                            HStack {
+                                Text("Negative Balance Days").font(.headline)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.red)
+                                Spacer()
+                                Text(String(History.negativeBalanceDaysLiveData))
+                            }
+                            HStack {
+                                Text("Positive Balance Days").font(.headline)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.green)
+                                Spacer()
+                                Text(String(History.positiveBalanceDaysLiveData))
+                            }
+                            HStack {
+                                Text("Even Balance Days").font(.headline)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.black)
+                                Spacer()
+                                Text(String(History.evenBalanceDaysLiveData))
+                            }
+                                
+                                            }
+                        Section(header: Text("Totals"), footer: Text("sd")) {
                             ForEach(History.totals, id: \.type) { total in
                                                     TotalRow(total: total)
                                                 }
@@ -53,8 +78,24 @@ import Charts
                                 .foregroundColor(.gray)
                         }
                         // Here
+                        Section(header: Text("Predictions")) {
+                            HStack {
+                                Text("Expenses" )
+                                    .font(.headline)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.red)
+                                Spacer()
+                                if let prediction = History.prediction?.predicted_expense {
+                                                                Text(String(format: "$%.2f", prediction))
+                                                            } else {
+                                                                Text("-")
+                                                            }
+                                
+                            }
+                                            }
                     }
                 }
+                
             }
             .onAppear(){
                 History.listTransactions()
@@ -64,6 +105,21 @@ import Charts
     }
 
 struct TotalRow: View {
+    var total: Total
+
+    var body: some View {
+        HStack {
+            Text(total.type)
+                .font(.headline)
+                .fontWeight(.bold)
+                .foregroundColor(total.type == "Expenses" ? .red : .green)
+            Spacer()
+            Text(String(format: "$%.2f", total.amount))
+        }
+    }
+}
+
+struct PredictionRow: View {
     var total: Total
 
     var body: some View {

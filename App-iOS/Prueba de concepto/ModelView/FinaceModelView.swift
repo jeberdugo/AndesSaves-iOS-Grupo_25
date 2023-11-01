@@ -231,6 +231,72 @@ final class HistoryViewModel: ObservableObject {
                 }
                     self.expensesByMonth()
                     self.calculateTotals()
+                    self.listPredictions()
+                    self.updateBalanceDays(transactions: self.transactions)
+            }
+            }
+        }
+    }
+    
+    @Published var negativeBalanceDaysLiveData = 0
+       @Published var positiveBalanceDaysLiveData = 0
+       @Published var evenBalanceDaysLiveData = 0
+
+       func updateBalanceDays(transactions: [Transaction]) {
+           var dailyBalances: [Date: Float] = [:]
+
+           for transaction in transactions {
+               let dateWithoutTime = Calendar.current.startOfDay(for: transaction.date.dateValue())
+               let amount = transaction.type == "Income" ? transaction.amount : -transaction.amount
+
+               if dailyBalances[dateWithoutTime] != nil {
+                   dailyBalances[dateWithoutTime]! += amount
+               } else {
+                   dailyBalances[dateWithoutTime] = amount
+               }
+           }
+
+           for (_, balance) in dailyBalances {
+               if balance > 0 {
+                   positiveBalanceDaysLiveData += 1
+               } else if balance < 0 {
+                   negativeBalanceDaysLiveData += 1
+               } else {
+                   evenBalanceDaysLiveData += 1
+               }
+           }
+       }
+    
+    @Published public var prediction: Prediction? = nil
+    func listPredictions() {
+        let date = Date()
+                let calendar = Calendar.current
+                let month = calendar.component(.month, from: date)
+                let year = calendar.component(.year, from: date)
+        
+        if let user = Auth.auth().currentUser {
+            let db = Firestore.firestore()
+            let predictions = db.collection("users").document(user.uid).collection("predictions").whereField("year", isEqualTo: year).whereField("month", isEqualTo:  month)
+
+            predictions.getDocuments { (snapshot, error) in
+                guard error == nil else {
+                    print(error!.localizedDescription)
+                    return
+                }
+                
+                if let snapshot = snapshot {
+                    for document in snapshot.documents{
+                            let data = document.data()
+            
+                            let amount = data["predicted_expense"] as? Float ?? 0
+                            let yearIn = data["year"] as? Int ?? 0
+                            let monthIn = data["month"] as? Int ?? 0
+
+                            
+                            let predicttionIn = Prediction(predicted_expense: amount, month: monthIn, year: yearIn )
+                            self.prediction = predicttionIn
+                }
+    
             }
             }
         }
