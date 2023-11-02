@@ -873,7 +873,7 @@ class NetworkMonitor: ObservableObject {
 final class SettingsViewModel: ObservableObject {
     @Published public var isLoggingOut = false
     @Published public var isDeletingAccount = false
-    @Published public var isShowAlarm = false
+    @Published public var isAlertShowing = false
     @AppStorage("notificationsEnabled") var notificationsEnabled = false
     
     @Published public var balance: Float = 0
@@ -882,46 +882,124 @@ final class SettingsViewModel: ObservableObject {
     @Published public var phone = ""
     @Published public var userId = ""
     
-    func signOut(){
-        do{
-            try Auth.auth().signOut()
-        } catch{
-            print("DEBUG: Failed to sign out with error \(error.localizedDescription)")
-        }
-    }
-    
-    func deleteAccount(){
+    private var networkMonitor: NetworkMonitor?
         
-    }
+        init() {
+            // Initialize the networkMonitor to monitor internet connectivity
+            networkMonitor = NetworkMonitor()
+            observeNetworkConnectivity()
+        }
+        
+        func signOut() {
+            do {
+                try Auth.auth().signOut()
+            } catch {
+                print("DEBUG: Failed to sign out with error \(error.localizedDescription)")
+            }
+        }
+        
+
+        private func observeNetworkConnectivity() {
+            networkMonitor?.$isConnected.sink { [weak self] isConnected in
+                if isConnected {
+                    self?.signOut()
+                    print("Restablishing connection ...")
+                    print("sign out ...")
+                }
+            }
+        }
     
-    func fetchUser(){
+    func fetchUser() {
+        // Load user data from cache (if available)
+        if let cachedUserData = UserDefaults.standard.data(forKey: "cachedUserData") {
+            if let decodedUserData = try? JSONDecoder().decode(UserData.self, from: cachedUserData) {
+                self.balance = decodedUserData.balance
+                self.email = decodedUserData.email
+                self.name = decodedUserData.name
+                self.phone = decodedUserData.phone
+                self.userId = decodedUserData.userId
+            }
+        }
+
+        // Fetch user data from Firebase
         if let user = Auth.auth().currentUser {
             let db = Firestore.firestore()
             let usersCollection = db.collection("users")
-            
+
+            let group = DispatchGroup()
+            var receivedResponse = false
+
+            group.enter()
 
             usersCollection.getDocuments { (snapshot, error) in
                 guard error == nil else {
-                    print(error!.localizedDescription)
+                    // Handle errors here
+                    DispatchQueue.global().asyncAfter(deadline: .now() + 0.5) {
+                        self.useCachedUserData()
+                    }
+                    group.leave()
                     return
                 }
-                
+
                 if let snapshot = snapshot {
-                    for document in snapshot.documents{
-                            let data = document.data()
-                            let id = data["userId"] as? String ?? ""
-                        if  id == user.uid{
-                            self.balance = data["balance"] as? Float ?? 0
-                            self.email = data["email"] as? String ?? ""
-                            self.name = data["name"] as? String ?? ""
-                            self.phone = data["phone"] as? String ?? ""
-                            self.userId = data["userId"] as? String ?? ""
+                    var userData: UserData?
+
+                    for document in snapshot.documents {
+                        let data = document.data()
+                        let id = data["userId"] as? String ?? ""
+                        if id == user.uid {
+                            userData = UserData(
+                                balance: data["balance"] as? Float ?? 0,
+                                email: data["email"] as? String ?? "",
+                                name: data["name"] as? String ?? "",
+                                phone: data["phone"] as? String ?? "",
+                                userId: id
+                            )
+                            break
                         }
                     }
+
+                    if let userData = userData {
+                        self.updateUserData(userData)
+                    } else {
+                        self.useCachedUserData()
+                    }
+
+                    receivedResponse = true
+                    group.leave()
+                }
+            }
+
+            // Use cached user data if no response within 0.5 seconds
+            DispatchQueue.global().asyncAfter(deadline: .now() + 0.5) {
+                if !receivedResponse {
+                    self.useCachedUserData()
                 }
             }
         }
     }
+
+    func updateUserData(_ userData: UserData) {
+        self.balance = userData.balance
+        self.email = userData.email
+        self.name = userData.name
+        self.phone = userData.phone
+        self.userId = userData.userId
+
+        // Save to cache
+        if let userData = try? JSONEncoder().encode(userData) {
+            UserDefaults.standard.set(userData, forKey: "cachedUserData")
+        }
+    }
+
+    func useCachedUserData() {
+        if let cachedUserData = UserDefaults.standard.data(forKey: "cachedUserData") {
+            if let decodedUserData = try? JSONDecoder().decode(UserData.self, from: cachedUserData) {
+                self.updateUserData(decodedUserData)
+            }
+        }
+    }
+
 }
 
 

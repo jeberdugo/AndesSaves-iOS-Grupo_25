@@ -97,3 +97,10 @@ struct TagAction: Codable {
     var categoryId: String
 }
 
+struct UserData: Codable {
+    var balance: Float
+    var email: String
+    var name: String
+    var phone: String
+    var userId: String
+}
