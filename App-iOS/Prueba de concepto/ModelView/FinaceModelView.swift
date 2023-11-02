@@ -881,14 +881,6 @@ final class SettingsViewModel: ObservableObject {
     @Published public var name  = ""
     @Published public var phone = ""
     @Published public var userId = ""
-    
-    private var networkMonitor: NetworkMonitor?
-        
-        init() {
-            // Initialize the networkMonitor to monitor internet connectivity
-            networkMonitor = NetworkMonitor()
-            observeNetworkConnectivity()
-        }
         
         func signOut() {
             do {
@@ -897,17 +889,7 @@ final class SettingsViewModel: ObservableObject {
                 print("DEBUG: Failed to sign out with error \(error.localizedDescription)")
             }
         }
-        
-
-        private func observeNetworkConnectivity() {
-            networkMonitor?.$isConnected.sink { [weak self] isConnected in
-                if isConnected {
-                    self?.signOut()
-                    print("Restablishing connection ...")
-                    print("sign out ...")
-                }
-            }
-        }
+    
     
     func fetchUser() {
         // Load user data from cache (if available)
