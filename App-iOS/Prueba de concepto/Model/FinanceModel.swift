@@ -31,8 +31,6 @@ var transactionId: String
 var type: String
 }
 
-
-
 struct AlertItem: Identifiable, Hashable {
     var id = UUID()
     var message: String

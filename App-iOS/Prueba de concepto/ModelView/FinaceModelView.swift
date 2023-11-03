@@ -332,10 +332,10 @@ final class HistoryViewModel: ObservableObject {
                     self.calculateTotals()
                     self.listPredictions()
                     self.updateBalanceDays(transactions: self.transactions)
-                }
             }
         }
     }
+   }
     
     
     @Published var negativeBalanceDaysLiveData = 0

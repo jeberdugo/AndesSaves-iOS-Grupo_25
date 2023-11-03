@@ -36,6 +36,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return orientationLock
     }
     
+
+
+
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         // Handle notification presentation here
         completionHandler([.banner, .sound, .badge]) // You can customize the presentation options
