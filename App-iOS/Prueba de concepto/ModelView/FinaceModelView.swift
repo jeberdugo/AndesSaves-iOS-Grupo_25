@@ -10,6 +10,7 @@ import Combine
 import SwiftUI
 import Firebase
 import FirebaseStorage
+import FirebaseFirestore
 import CoreMotion
 
 final class ContentViewModel: ObservableObject {
@@ -230,6 +231,72 @@ final class HistoryViewModel: ObservableObject {
                 }
                     self.expensesByMonth()
                     self.calculateTotals()
+                    self.listPredictions()
+                    self.updateBalanceDays(transactions: self.transactions)
+            }
+            }
+        }
+    }
+    
+    @Published var negativeBalanceDaysLiveData = 0
+       @Published var positiveBalanceDaysLiveData = 0
+       @Published var evenBalanceDaysLiveData = 0
+
+       func updateBalanceDays(transactions: [Transaction]) {
+           var dailyBalances: [Date: Float] = [:]
+
+           for transaction in transactions {
+               let dateWithoutTime = Calendar.current.startOfDay(for: transaction.date.dateValue())
+               let amount = transaction.type == "Income" ? transaction.amount : -transaction.amount
+
+               if dailyBalances[dateWithoutTime] != nil {
+                   dailyBalances[dateWithoutTime]! += amount
+               } else {
+                   dailyBalances[dateWithoutTime] = amount
+               }
+           }
+
+           for (_, balance) in dailyBalances {
+               if balance > 0 {
+                   positiveBalanceDaysLiveData += 1
+               } else if balance < 0 {
+                   negativeBalanceDaysLiveData += 1
+               } else {
+                   evenBalanceDaysLiveData += 1
+               }
+           }
+       }
+    
+    @Published public var prediction: Prediction? = nil
+    func listPredictions() {
+        let date = Date()
+                let calendar = Calendar.current
+                let month = calendar.component(.month, from: date)
+                let year = calendar.component(.year, from: date)
+        
+        if let user = Auth.auth().currentUser {
+            let db = Firestore.firestore()
+            let predictions = db.collection("users").document(user.uid).collection("predictions").whereField("year", isEqualTo: year).whereField("month", isEqualTo:  month)
+
+            predictions.getDocuments { (snapshot, error) in
+                guard error == nil else {
+                    print(error!.localizedDescription)
+                    return
+                }
+                
+                if let snapshot = snapshot {
+                    for document in snapshot.documents{
+                            let data = document.data()
+            
+                            let amount = data["predicted_expense"] as? Float ?? 0
+                            let yearIn = data["year"] as? Int ?? 0
+                            let monthIn = data["month"] as? Int ?? 0
+
+                            
+                            let predicttionIn = Prediction(predicted_expense: amount, month: monthIn, year: yearIn )
+                            self.prediction = predicttionIn
+                }
+    
             }
             }
         }
@@ -384,19 +451,121 @@ final class BudgetsViewModel: ObservableObject {
     
     
     struct Budget: Codable {
+        var documentID: String?
         let name: String
-        let total: Int
+        let total: Float
+        var contributions: Float
         let user: String
         let date: Date
         let type: Int
     }
 
-    func createBudget(name: String, total: Int, date: Date, type: Int) {
-        
+    func createBudget(name: String, total: Float, date: Date, type: Int) {
+        let user = Auth.auth().currentUser
+        let contributions = 0
+        if let user = user {
+            let db = Firestore.firestore()
+            let budgetsCollection = db.collection("users").document(user.uid).collection("budgets")
+            
+            // Create a new budget document with a unique identifier
+            var ref: DocumentReference? = nil
+            ref = budgetsCollection.addDocument(data: [
+                "name": name,
+                "total": total,
+                "contributions": contributions,
+                "date": date,
+                "type": type,
+                "user": user.uid
+            ]) { error in
+                if let error = error {
+                    print("Error creating budget: \(error.localizedDescription)")
+                } else {
+                    print("Budget created with ID: \(ref!.documentID)")
+                    // You may perform additional actions here upon successful budget creation.
+                }
+            }
+        }
     }
     
     func fetchBudgets(completion: @escaping ([Budget]?) -> Void) {
-        
+        let user = Auth.auth().currentUser
+        if let user = user {
+            let db = Firestore.firestore()
+            let budgetsCollection = db.collection("users").document(user.uid).collection("budgets")
+            
+            // Fetch all budget documents from Firestore
+            budgetsCollection.getDocuments { (snapshot, error) in
+                if let error = error {
+                    print("Error fetching budgets: \(error.localizedDescription)")
+                    completion(nil)
+                    return
+                }
+                
+                var budgets: [Budget] = []
+                
+                if let snapshot = snapshot {
+                    for document in snapshot.documents {
+                    
+                        let data = document.data()
+                        
+                        // Access the document ID for each document
+                        let documentID = document.documentID
+                        print("Document ID: \(documentID)")
+                        
+                        if let name = data["name"] as? String,
+                           let total = data["total"] as? Float,
+                           let dateTimestamp = data["date"] as? Timestamp,
+                           let type = data["type"] as? Int {
+                            
+                            // Convert the Timestamp to a Date
+                            let date = dateTimestamp.dateValue()
+                            
+                            // Calculate the amount (assuming you have the amount stored as a separate field in Firestore)
+                            let contributions = data["contributions"] as? Float
+                            
+                            // Create a Budget instance
+                            let budget = Budget(documentID: document.documentID, name: name, total: total, contributions: contributions ?? 0, user: user.uid, date: date, type: type)
+                            budgets.append(budget)
+                            
+                            // Print the data for debugging
+                            print("Fetched Budget: \(budget)")
+                        }
+                    }
+                }
+                
+                completion(budgets)
+            }
+        }
+    }
+    
+  
+    func updateContributions(newContributions: Float, documentID: String, currentContributions: Float, completion: @escaping (Bool) -> Void) {
+        let user = Auth.auth().currentUser
+        if let user = user {
+            let db = Firestore.firestore()
+            let budgetsCollection = db.collection("users").document(user.uid).collection("budgets")
+            
+            // Get the document reference for the specific budget using its document ID
+            let documentRef = budgetsCollection.document(documentID)
+            
+            // Update the contributions field
+            documentRef.updateData([
+                "contributions": newContributions + currentContributions
+            ]) { error in
+                if let error = error {
+                    print("Error updating contributions for budget: \(error.localizedDescription)")
+                    completion(false)
+                } else {
+                    print("Contributions updated for budget: \(documentID)")
+                    
+                    // Calculate the updated contributions value
+                    let updatedContributions = newContributions + currentContributions
+                    
+                    // Pass the updated contributions value to the completion handler
+                    completion(true)
+                }
+            }
+        }
     }
     
 

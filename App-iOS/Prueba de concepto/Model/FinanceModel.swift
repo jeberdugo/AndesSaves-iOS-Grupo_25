@@ -31,6 +31,12 @@ var transactionId: String
 var type: String
 }
 
+struct Prediction: Hashable {
+var predicted_expense: Float
+var month: Int
+var year: Int
+}
+
 struct AlertItem: Identifiable, Hashable {
     var id = UUID()
     var message: String
@@ -58,9 +64,12 @@ struct WebSheetItem: Identifiable {
 }
 
 struct Budget:Hashable {
+    var documentID: String?
     var name: String
-    var date: String
-    var percentage: String
+    var date: Date
+    var total: Float
+    var contributions: Float
+    var type: Float
 }
 
 
