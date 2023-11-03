@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UserNotifications
 
 // MENU PRINCIPAL
 struct MainMenu: View {
@@ -60,9 +61,22 @@ struct MainMenu: View {
             }
             .edgesIgnoringSafeArea(/*@START_MENU_TOKEN@*/.all/*@END_MENU_TOKEN@*/)
         }
-        }
+        }.onAppear(perform: scheduleNotification)
     }
 }
+
+func scheduleNotification() {
+        let content = UNMutableNotificationContent()
+        content.title = "Alerta de gastos"
+        content.body = "Estás por encima de tus gastos estimados. ¡Cuida tus finanzas!"
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+
+        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
+
+        let center = UNUserNotificationCenter.current()
+        center.add(request)
+    }
 
 struct TopRoundedRectangle: Shape {
     var radius: CGFloat

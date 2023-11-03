@@ -121,3 +121,9 @@ enum ImageLoadingError: Error {
     case imageNotFound
     case imageDataConversionFailed
 }
+
+struct Prediction: Hashable {
+    var predicted_expense: Float
+    var month: Int
+    var year: Int
+}
