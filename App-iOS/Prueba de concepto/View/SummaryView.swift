@@ -133,8 +133,5 @@ struct PredictionRow: View {
         }
     }
 }
-    
-
-
 
     

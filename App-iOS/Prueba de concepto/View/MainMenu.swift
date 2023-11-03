@@ -65,6 +65,7 @@ struct MainMenu: View {
     }
 }
 
+
 func scheduleNotification() {
         let content = UNMutableNotificationContent()
         content.title = "Alerta de gastos"
@@ -77,6 +78,7 @@ func scheduleNotification() {
         let center = UNUserNotificationCenter.current()
         center.add(request)
     }
+
 
 struct TopRoundedRectangle: Shape {
     var radius: CGFloat
