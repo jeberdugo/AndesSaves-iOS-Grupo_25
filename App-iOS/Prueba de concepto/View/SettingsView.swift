@@ -12,6 +12,9 @@ import UserNotifications
 struct SettingsView: View {
     @StateObject private var functions = GlobalFunctions()
     @StateObject private var viewModel = SettingsViewModel()
+    @StateObject private var networkManager = NetworkMonitor()
+    @State private var isInternetConnected = true
+    
     
     var body: some View {
         ZStack() {
@@ -100,9 +103,14 @@ struct SettingsView: View {
             Section("Accounts"){
                 
                         Button{
-                            print("Sign Out..")
-                            viewModel.signOut()
-                            viewModel.isLoggingOut.toggle()
+                            let isConnected = networkManager.isConnected
+                            if networkManager.isConnected {
+                                print("Sign Out..")
+                                viewModel.signOut()
+                                viewModel.isLoggingOut.toggle()
+                            } else{
+                                viewModel.isAlertShowing = true
+                            }
                         }label: {
                             HStack(spacing: 12){
                                 Image(systemName: "arrow.left.circle.fill")
@@ -156,8 +164,18 @@ struct SettingsView: View {
                             secondaryButton: .cancel())}
                  */
             }
+            .alert(isPresented: $viewModel.isAlertShowing) {
+                       Alert(
+                           title: Text("No Internet Connection"),
+                           message: Text("Please check your internet connection and try again."),
+                           dismissButton: .default(Text("OK"))
+                       )
+                   }
         }
         .listStyle(PlainListStyle())
+        .onReceive(networkManager.$isConnected) { isConnected in
+            isInternetConnected = isConnected
+        }
         .onAppear {
             
             viewModel.fetchUser()

@@ -16,6 +16,7 @@ struct Prueba_de_conceptoApp: App {
     var body: some Scene {
         WindowGroup {
             LoginView().environmentObject(loginViewModel)
+            
                 .onAppear {
                     appDelegate.orientationLock = .portrait
                 }
