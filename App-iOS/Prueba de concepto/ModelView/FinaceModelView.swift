@@ -15,6 +15,8 @@ import CoreMotion
 import Network
 
 final class ContentViewModel: ObservableObject {
+    
+    
     @Published public var isAddingTransaction = false
     @Published public var fieldsAreEmpty = false
     @Published public var transactionName = ""
@@ -43,7 +45,14 @@ final class ContentViewModel: ObservableObject {
             let db = Firestore.firestore()
             let transactionsCollection = db.collection("users").document(user.uid).collection("transactions")
             // Create a new transaction document with a unique identifier
-                    var ref: DocumentReference? = nil
+                var ref: DocumentReference? = nil
+            
+                let group = DispatchGroup()
+                let timerDuration: TimeInterval = 0.5
+                let dispatchTime = DispatchTime.now() + timerDuration
+                var receivedResponse = false
+            
+                    group.enter()
                     ref = transactionsCollection.addDocument(data: [
                         "amount": amount,
                         "category": category,
@@ -54,20 +63,34 @@ final class ContentViewModel: ObservableObject {
                         "type": type
                     ]) { error in
                         if let error = error {
-                            print("Error adding transaction: \(error.localizedDescription)")
+                            DispatchQueue.global().asyncAfter(deadline: dispatchTime) {
+                                let timestamp = Timestamp(date: date)
+                                let transaction = Transaction(amount: Float(amount),
+                                                              category: category,
+                                                              date:  timestamp,
+                                                              imageUri: imageUri,
+                                                              name: name,
+                                                              source: source, transactionId: "0", type: type )
+                               // self.historyViewModel.transactions.append(transaction)
+                                //self.historyViewModel.saveTransactionsToCache()
+                            }
                         } else {
+                            receivedResponse = true
+                            group.leave()
                             self.balance = self.balance + Float(amount)
                             self.updateBalance(newBalance: self.balance)
                             print("Transaction added with ID: \(ref!.documentID)")
                             if image != nil{
                                 //self.saveImageFromDirectory(fileName: ref!.documentID, image: image)
                                 self.uploadImage(fileName: ref!.documentID, image: image)
+                                self.saveImageFromDirectory(fileName: ref!.documentID, image: image)
                             }
                             self.isAddingTransaction = false
                         }
                     }
                 }
             }
+    
     
     func updateBalance(newBalance: Float) {
         if let user = Auth.auth().currentUser {
@@ -200,68 +223,159 @@ final class HistoryViewModel: ObservableObject {
         return dateFormatter.string(from: date)
     }
     
-    
+    init() {
+        if let transactionsData = UserDefaults.standard.data(forKey: "cachedTransactions") {
+            if let transactionDictionaries = try? PropertyListSerialization.propertyList(from: transactionsData, options: [], format: nil) as? [[String: Any]] {
+                self.transactions = transactionDictionaries.map { dictionary in
+                    return Transaction(
+                        amount: dictionary["amount"] as? Float ?? 0,
+                        category: dictionary["category"] as? String ?? "",
+                        date: dictionary["date"] as? Timestamp ?? Timestamp(),
+                        imageUri: dictionary["imageUri"] as? String ?? "",
+                        name: dictionary["name"] as? String ?? "",
+                        source: dictionary["source"] as? String ?? "",
+                        transactionId: dictionary["transactionId"] as? String ?? "",
+                        type: dictionary["type"] as? String ?? ""
+                    )
+                }
+            }
+        }
+    }
+ 
+    func saveTransactionsToCache() {
+        // Convert transactions to an array of dictionaries
+        let transactionDictionaries: [[String: Any]] = transactions.map { transaction in
+            return [
+                "amount": transaction.amount,
+                "category": transaction.category,
+                "date": transaction.date, // You might need to convert this to a compatible format
+                "imageUri": transaction.imageUri,
+                "name": transaction.name,
+                "source": transaction.source,
+                "type": transaction.type
+            ]
+        }
+
+        // Save the array of dictionaries to a Plist
+        if let transactionsData = try? PropertyListSerialization.data(fromPropertyList: transactionDictionaries, format: .binary, options: 0) {
+            UserDefaults.standard.set(transactionsData, forKey: "cachedTransactions")
+        }
+    }
+
     func listTransactions() {
-        transactions.removeAll()
+        // Try to load transactions from cache
+        if let cachedTransactionsData = UserDefaults.standard.data(forKey: "cachedTransactions"),
+           let cachedTransactionDictionaries = try? PropertyListSerialization.propertyList(from: cachedTransactionsData, options: [], format: nil) as? [[String: Any]] {
+            
+            let cachedTransactions = cachedTransactionDictionaries.compactMap { dictionary in
+                Transaction(
+                    amount: dictionary["amount"] as? Float ?? 0,
+                    category: dictionary["category"] as? String ?? "",
+                    date: dictionary["date"] as? Timestamp ?? Timestamp(),
+                    imageUri: dictionary["imageUri"] as? String ?? "",
+                    name: dictionary["name"] as? String ?? "",
+                    source: dictionary["source"] as? String ?? "",
+                    transactionId: dictionary["transactionId"] as? String ?? "",
+                    type: dictionary["type"] as? String ?? ""
+                )
+            }
+            
+            // Use cached transactions while fetching from Firebase
+            self.transactions = cachedTransactions
+        }
+
         if let user = Auth.auth().currentUser {
             let db = Firestore.firestore()
             let transactionsCollection = db.collection("users").document(user.uid).collection("transactions")
-            
 
-            transactionsCollection.getDocuments { (snapshot, error) in
-                guard error == nil else {
-                    print(error!.localizedDescription)
-                    return
+            transactionsCollection.getDocuments { [weak self] (snapshot, error) in
+                guard let self = self else { return }
+
+                if let error = error {
+                    print("Firebase Error: \(error.localizedDescription)")
                 }
-                
+
                 if let snapshot = snapshot {
-                    for document in snapshot.documents{
-                            let data = document.data()
-            
-                            let amount = data["amount"] as? Float ?? 0
-                            let category = data["category"] as? String ?? ""
+                    var fetchedTransactions = [Transaction]()
+
+                    for document in snapshot.documents {
+                        let data = document.data()
+                        let amount = data["amount"] as? Float ?? 0
+                        let category = data["category"] as? String ?? ""
                         let date = data["date"] as? Timestamp ?? Timestamp()
-                            let imageUri = data["imageUri"] as? String ?? ""
-                            let name = data["name"] as? String ?? ""
-                            let source = data["source"] as? String ?? ""
-                            let transactionId = document.documentID
-                            let type = data["type"] as? String ?? ""
-                            
-                            let transaction = Transaction(amount: amount, category: category, date: date, imageUri: imageUri, name: name, source: source, transactionId: transactionId, type: type)
-                            self.transactions.append(transaction)
-                }
+                        let imageUri = data["imageUri"] as? String ?? ""
+                        let name = data["name"] as? String ?? ""
+                        let source = data["source"] as? String ?? ""
+                        let transactionId = document.documentID
+                        let type = data["type"] as? String ?? ""
+
+                        let transaction = Transaction(
+                            amount: amount,
+                            category: category,
+                            date: date,
+                            imageUri: imageUri,
+                            name: name,
+                            source: source,
+                            transactionId: transactionId,
+                            type: type
+                        )
+
+                        fetchedTransactions.append(transaction)
+                    }
+
+                    // Update the transaction list
+                    self.transactions = fetchedTransactions
+
+                    // Save the fetched transactions to the cache
+                    self.saveTransactionsToCache()
                     self.expensesByMonth()
                     self.calculateTotals()
-            }
+                }
             }
         }
     }
     
     
-    func deleteTransaction(transactionId: String) {
+    func deleteTransaction(transactionId: String, name: String) {
         if let user = Auth.auth().currentUser {
             let db = Firestore.firestore()
             let transactionsCollection = db.collection("users").document(user.uid).collection("transactions")
 
-            // Get a reference to the category document you want to delete
             let transactionDocument = transactionsCollection.document(transactionId)
 
-            // Delete the category document
+            let timerDuration: TimeInterval = 0.5
+            let dispatchTime = DispatchTime.now() + timerDuration
+            var receivedResponse = false
+
+            var deletionError: Error?
             transactionDocument.delete { error in
-                if let error = error {
-                    print("Error deleting category: \(error.localizedDescription)")
-                } else {
-                    print("Category deleted successfully")
-                    self.deleteImage(fileName: transactionDocument.documentID)
+                receivedResponse = true
+                deletionError = error
+            }
+
+            DispatchQueue.global().asyncAfter(deadline: dispatchTime) {
+
+                if let error = deletionError {
+                    print("Error deleting transaction: \(error.localizedDescription)")
                     
-                    // Optionally, remove the deleted category from your local array
+    
+                    if let index = self.transactions.firstIndex(where: { $0.name == name }) {
+                        self.transactions.remove(at: index)
+                    }
+                    self.saveTransactionsToCache()
+                    self.deleteImage(fileName: transactionId)
+                } else {
+                    
+                    print("Transaction deleted successfully")
                     if let index = self.transactions.firstIndex(where: { $0.transactionId == transactionId }) {
                         self.transactions.remove(at: index)
+                        self.deleteImage(fileName: transactionId)
                     }
                 }
             }
         }
     }
+
     
     func loadImageFromDirectory(fileName: String){
         let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -280,7 +394,6 @@ final class HistoryViewModel: ObservableObject {
 
         do {
             try FileManager.default.removeItem(at: imagePath)
-            print("Image Deleted from directory")
         } catch {
             print("Failed to delete: " + error.localizedDescription)
         }
@@ -661,13 +774,11 @@ final class TagsViewModel: ObservableObject {
                     let category = CategoryWithId(name: "Add", categoryId: "0")
                                         categoriesWithId.append(category)
 
-                    // Update the UI on the main queue
                     DispatchQueue.main.async {
                         self.expenseCategories = categories
                         self.categoriesWithId = categoriesWithId
                         self.tagCount = self.expenseCategories.count
 
-                        // Save to cache
                         if let categoriesData = try? JSONEncoder().encode(categories) {
                             UserDefaults.standard.set(categoriesData, forKey: "cachedCategories")
                         }
@@ -683,11 +794,6 @@ final class TagsViewModel: ObservableObject {
             }
         }
     }
-
-
-
-
-
 
 
     
@@ -719,7 +825,6 @@ final class TagsViewModel: ObservableObject {
                     // Handle the case where an error occurred during deletion
                     print("Error deleting category: \(error.localizedDescription)")
                     
-                    let category = CategoryWithId(name: name, categoryId: categoryId)
                     let action = TagAction(type: .delete, name: name, categoryId: categoryId)
                     self.pendingActions.append(action)
                     

@@ -31,6 +31,8 @@ var transactionId: String
 var type: String
 }
 
+
+
 struct AlertItem: Identifiable, Hashable {
     var id = UUID()
     var message: String
@@ -103,4 +105,19 @@ struct UserData: Codable {
     var name: String
     var phone: String
     var userId: String
+}
+
+enum ImageDeletionError: Error {
+    case imageNotFound
+    case deletionFailed
+}
+
+enum ImageSavingError: Error {
+    case directoryCreationFailed
+    case imageDataConversionFailed
+}
+
+enum ImageLoadingError: Error {
+    case imageNotFound
+    case imageDataConversionFailed
 }
