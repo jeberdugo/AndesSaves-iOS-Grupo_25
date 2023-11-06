@@ -16,6 +16,10 @@ import Network
 
 final class ContentViewModel: ObservableObject {
     
+    init() {
+        loadBalanceFromUserDefaults()
+    }
+    
     
     @Published public var isAddingTransaction = false
     @Published public var fieldsAreEmpty = false
@@ -36,6 +40,27 @@ final class ContentViewModel: ObservableObject {
         transactionName = ""
         transactionAmount = ""
         transactionSource = ""
+    }
+    
+    
+    func loadBalanceFromUserDefaults() {
+        if let savedBalance = UserDefaults.standard.value(forKey: "userBalance") as? Float {
+            balance = savedBalance
+        }
+    }
+    
+    func saveBalanceToUserDefaults(_ balance: Float) {
+        UserDefaults.standard.set(balance, forKey: "userBalance")
+    }
+    
+    func removeBalanceFromUserDefaults() {
+        UserDefaults.standard.removeObject(forKey: "userBalance")
+    }
+
+    func updateBalanceInCache(newBalance: Float) {
+        balance = newBalance
+        saveBalanceToUserDefaults(newBalance)
+        // Resto de tu lógica de actualización
     }
 
     
@@ -71,6 +96,13 @@ final class ContentViewModel: ObservableObject {
                                                               imageUri: imageUri,
                                                               name: name,
                                                               source: source, transactionId: "0", type: type )
+                                self.balance = self.balance + Float(amount)
+                                self.updateBalance(newBalance: self.balance)
+                                self.loadBalanceFromUserDefaults()
+                        if image != nil{
+                                    self.saveImageFromDirectory(fileName: name, image: image)
+                                }
+                                self.isAddingTransaction = false
                                // self.historyViewModel.transactions.append(transaction)
                                 //self.historyViewModel.saveTransactionsToCache()
                             }
@@ -103,9 +135,11 @@ final class ContentViewModel: ObservableObject {
                 if let error = error {
                     // Handle the error here
                     print("Error updating balance: \(error.localizedDescription)")
+                    self.saveBalanceToUserDefaults(newBalance)
                 } else {
                     // Update successful
                     print("Balance updated successfully")
+                    self.removeBalanceFromUserDefaults()
                 }
             }
         }
@@ -366,6 +400,27 @@ final class HistoryViewModel: ObservableObject {
                    }
                }
            }
+    
+    
+    func calculateFinalBalanceForMonth(transactions: [Transaction], year: Int, month: Int) -> Float {
+        let calendar = Calendar.current
+
+        let firstDayOfMonth = calendar.date(from: DateComponents(year: year, month: month, day: 1))!
+        let lastDayOfMonth = calendar.date(from: DateComponents(year: year, month: month + 1, day: 1))!
+
+        var balance: Float = 0
+
+        for transaction in transactions {
+            let transactionDate = transaction.date.dateValue()
+
+            if transactionDate >= firstDayOfMonth && transactionDate < lastDayOfMonth {
+                let amount = transaction.type == "Income" ? transaction.amount : -transaction.amount
+                balance += amount
+            }
+        }
+
+        return balance
+    }
     
     
     @Published public var prediction: Prediction? = nil
