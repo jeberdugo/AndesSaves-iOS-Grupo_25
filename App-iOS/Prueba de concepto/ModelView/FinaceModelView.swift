@@ -486,12 +486,15 @@ final class HistoryViewModel: ObservableObject {
                         self.transactions.remove(at: index)
                     }
                     self.saveTransactionsToCache()
-                    self.deleteImage(fileName: transactionId)
+                    self.deleteImageFromDirectory(fileName: transactionId)
+                    self.deleteImageFromDirectory(fileName: name)
                 } else {
                     
                     print("Transaction deleted successfully")
                     if let index = self.transactions.firstIndex(where: { $0.transactionId == transactionId }) {
                         self.transactions.remove(at: index)
+                        self.deleteImageFromDirectory(fileName: transactionId)
+                        self.deleteImageFromDirectory(fileName: name)
                         self.deleteImage(fileName: transactionId)
                     }
                 }
