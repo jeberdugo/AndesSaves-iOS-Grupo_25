@@ -621,7 +621,7 @@ final class HistoryViewModel: ObservableObject {
 
 
 final class BudgetsViewModel: ObservableObject {
-
+    
     
     
     struct Budget: Codable {
@@ -633,7 +633,39 @@ final class BudgetsViewModel: ObservableObject {
         let date: Date
         let type: Int
     }
+    
+    // Key for caching budgets in UserDefaults
+       private let budgetsCacheKey = "BudgetsCache"
 
+       @Published var budgets: [Budget] = []
+
+       init() {
+           loadCachedBudgets()
+       }
+    
+    // Update cached budgets
+    private func updateCachedBudgets() {
+        do {
+            let budgetData = try JSONEncoder().encode(budgets)
+            UserDefaults.standard.set(budgetData, forKey: budgetsCacheKey)
+        } catch {
+            print("Error encoding budgets for caching: \(error.localizedDescription)")
+        }
+    }
+
+    // Load cached budgets from UserDefaults
+    private func loadCachedBudgets() {
+        if let cachedBudgetData = UserDefaults.standard.data(forKey: budgetsCacheKey),
+           let cachedBudgets = try? JSONDecoder().decode([Budget].self, from: cachedBudgetData) {
+            budgets = cachedBudgets
+        }
+    }
+    
+    
+    
+    
+    
+    
     func createBudget(name: String, total: Float, date: Date, type: Int) {
         let user = Auth.auth().currentUser
         let contributions = 0
@@ -657,11 +689,25 @@ final class BudgetsViewModel: ObservableObject {
                     print("Budget created with ID: \(ref!.documentID)")
                     // You may perform additional actions here upon successful budget creation.
                 }
+                
+                // Update the cached budget data
+                let newBudget = Budget(documentID: ref!.documentID, name: name, total: total, contributions: Float(contributions), user: user.uid, date: date, type: type)
+                self.budgets.append(newBudget)
+                self.updateCachedBudgets()
+                
             }
         }
     }
     
-    func fetchBudgets(completion: @escaping ([Budget]?) -> Void) {
+   
+    
+    func fetchBudgets(completion: @escaping ([Budget]?) -> Void) {        // Check if cached budgets are available
+        if !budgets.isEmpty {
+            completion(self.budgets)
+        }
+        
+    
+        
         let user = Auth.auth().currentUser
         if let user = user {
             let db = Firestore.firestore()
@@ -679,7 +725,7 @@ final class BudgetsViewModel: ObservableObject {
                 
                 if let snapshot = snapshot {
                     for document in snapshot.documents {
-                    
+                        
                         let data = document.data()
                         
                         // Access the document ID for each document
@@ -707,12 +753,15 @@ final class BudgetsViewModel: ObservableObject {
                     }
                 }
                 
+                self.budgets = budgets
+                self.updateCachedBudgets()
+
                 completion(budgets)
             }
         }
     }
     
-  
+    
     func updateContributions(newContributions: Float, documentID: String, currentContributions: Float, completion: @escaping (Bool) -> Void) {
         let user = Auth.auth().currentUser
         if let user = user {
@@ -735,6 +784,12 @@ final class BudgetsViewModel: ObservableObject {
                     // Calculate the updated contributions value
                     let updatedContributions = newContributions + currentContributions
                     
+                    // Update the cached budget data
+                    if let index = self.budgets.firstIndex(where: { $0.documentID == documentID }) {
+                        self.budgets[index].contributions = updatedContributions
+                        self.updateCachedBudgets()
+                    }
+                    
                     // Pass the updated contributions value to the completion handler
                     completion(true)
                 }
@@ -743,8 +798,10 @@ final class BudgetsViewModel: ObservableObject {
     }
     
 
+    
+    
+    
 }
-
 
 final class TagsViewModel: ObservableObject {
         @Published var tagsItems: [TagsItem] = [
