@@ -6,13 +6,29 @@
 //
 
 import Foundation
+import Firebase
 
-
-struct Transaction: Identifiable, Hashable {
+struct ExpenseByCategory: Identifiable {
     var id = UUID()
-    var name: String
-    var amount: Double
-    var date: Date
+    var category: String
+    var amount: Float
+}
+
+struct Total: Identifiable {
+    var id = UUID()
+    var type: String
+    var amount: Float
+}
+
+struct Transaction: Hashable {
+var amount: Float
+var category: String
+var date: Timestamp
+var imageUri: String
+var name: String
+var source: String
+var transactionId: String
+var type: String
 }
 
 struct AlertItem: Identifiable, Hashable {
@@ -42,7 +58,70 @@ struct WebSheetItem: Identifiable {
 }
 
 struct Budget:Hashable {
+    var documentID: String?
     var name: String
-    var date: String
-    var percentage: String
+    var date: Date
+    var total: Float
+    var contributions: Float
+    var type: Float
+}
+
+
+struct Income: Decodable, Identifiable {
+    var id : String?
+    let amount: Int
+    let date: Date
+    let source: String
+    let user: String
+}
+
+
+struct Category: Codable {
+    var name: String
+    var user: String
+}
+
+struct CategoryWithId: Codable {
+    var name: String
+    var categoryId: String
+}
+
+enum TagActionType: String, Codable {
+    case add
+    case delete
+}
+
+struct TagAction: Codable {
+    let type: TagActionType
+    var name: String
+    var categoryId: String
+}
+
+struct UserData: Codable {
+    var balance: Float
+    var email: String
+    var name: String
+    var phone: String
+    var userId: String
+}
+
+enum ImageDeletionError: Error {
+    case imageNotFound
+    case deletionFailed
+}
+
+enum ImageSavingError: Error {
+    case directoryCreationFailed
+    case imageDataConversionFailed
+}
+
+enum ImageLoadingError: Error {
+    case imageNotFound
+    case imageDataConversionFailed
+}
+
+struct Prediction: Hashable {
+    var predicted_expense: Float
+    var month: Int
+    var year: Int
 }

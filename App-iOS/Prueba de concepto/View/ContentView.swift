@@ -11,19 +11,12 @@ import UserNotifications
 
 
 
-struct FinanceApp: App {
-    var body: some Scene {
-        WindowGroup {
-            LoginView()
-        }
-    }
-}
-
 struct ContentView: View {
     @State private var showAlert = false
     @StateObject private var viewModel = ContentViewModel()
     @StateObject private var functions = GlobalFunctions()
     @StateObject private var History = HistoryViewModel()
+    @StateObject private var CategoryView = TagsViewModel()
     
     var body: some View {
         NavigationView {
@@ -40,11 +33,12 @@ struct ContentView: View {
                             .fontWeight(.bold)
                             .foregroundColor(.white)
                        
-                        Text("$\(String(format: "%.2f", History.calculateBalance()))")
+                        Text("$\(String(format: "%.2f", viewModel.balance))")
                             .font(.largeTitle)
                             .foregroundColor(.white)
-                        
                         Button(action: {
+                            CategoryView.listCategories()
+                            print(CategoryView.expenseCategories.count)
                             viewModel.isAddingTransaction.toggle()
                         }) {
                             Text("Add Transaction")
@@ -52,10 +46,11 @@ struct ContentView: View {
                                 .padding()
                                 .background(Color.black)
                                 .cornerRadius(10)
+                            
                         }
                         .sheet(isPresented: $viewModel.isAddingTransaction) {
 
-                            ZStack() {
+                            /*ZStack() {
                                 //Color(red: 21/255, green: 191/255, blue: 129/255).edgesIgnoringSafeArea(.all)
                                 if(viewModel.selectedType == 1){
                                     Color(hex:"EE446D ").edgesIgnoringSafeArea(.all)                                                                    }
@@ -125,12 +120,13 @@ struct ContentView: View {
                                         }
                                     ),
                                     secondaryButton: .cancel())
-                            }
+                            }*/
 
                             AddTransactionView()
                                 .environmentObject(viewModel)
                                 .environmentObject(functions)
                                 .environmentObject(History)
+                                .environmentObject(CategoryView)
 
                         }
                     }
@@ -139,6 +135,9 @@ struct ContentView: View {
                     
                 }
             }
+        }
+        .onAppear(){
+            viewModel.fetchUser() 
         }
         .navigationBarBackButtonHidden(/*@START_MENU_TOKEN@*/true/*@END_MENU_TOKEN@*/)
         }
@@ -149,10 +148,13 @@ struct AddTransactionView: View {
     @EnvironmentObject var viewModel: ContentViewModel
     @EnvironmentObject var functions: GlobalFunctions
     @EnvironmentObject var historyViewModel: HistoryViewModel
+    @EnvironmentObject var CategoryView: TagsViewModel
+    @State private var showAlert = false
+    @State private var showAlertInteger = false
     @State private var showImagePicker = false
-    @State private var image: Image?
+    @State private var image: Image? 
     @State private var isShowingImage = false
-    let expenseCategories = ["Food", "Transport", "House", "Others"]
+    @State private var uiimage: UIImage?
     
     var body: some View {
         ZStack() {
@@ -177,8 +179,25 @@ struct AddTransactionView: View {
             Form {
                 Section(header: Text("Transaction Details")) {
                     TextField("Name", text: $viewModel.transactionName)
+                        .onChange(of: viewModel.transactionName) { newValue in
+                        if newValue.count > 30 {
+                            viewModel.transactionName = String(newValue.prefix(30))
+                            }
+                        }
                     TextField("Amount", text: $viewModel.transactionAmount)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .keyboardType(.decimalPad)
+                        .onChange(of: viewModel.transactionAmount) { newValue in
+                            if newValue.count > 24 {
+                                viewModel.transactionAmount = String(newValue.prefix(10))
+                            }
+                        }
                     TextField("Source", text: $viewModel.transactionSource)
+                        .onChange(of: viewModel.transactionSource) { newValue in
+                            if newValue.count > 30 {
+                                viewModel.transactionSource = String(newValue.prefix(30))
+                            }
+                        }
                 }
                 
                 Section(header: Text("Type")) {
@@ -193,8 +212,8 @@ struct AddTransactionView: View {
                 if viewModel.selectedType == 1 {
                     Section(header: Text("Expense Category")) {
                         Picker("Select Category", selection: $viewModel.selectedExpenseCategory) {
-                            ForEach(0..<expenseCategories.count) { index in
-                                Text(expenseCategories[index])
+                            ForEach(0..<CategoryView.expenseCategories.count, id: \.self) { index in
+                                Text(CategoryView.expenseCategories[index])
                             }
                         }
                         .pickerStyle(SegmentedPickerStyle())
@@ -244,24 +263,97 @@ struct AddTransactionView: View {
             }
             
             Button(action: {
-                // Add action logic here to save the transaction
-                checkAndSendNotificationIfNeeded()
+                
+                if !((CategoryView.tagCount == 0) && (viewModel.selectedType == 1)){
+                    if viewModel.transactionName.isEmpty || viewModel.transactionAmount.isEmpty || viewModel.transactionSource.isEmpty {
+                    // Set error flag and message
+                    viewModel.fieldsAreEmpty = true
+                    viewModel.errorText = "All fields must be filled."
+                } else {
+                    viewModel.fieldsAreEmpty = false
+                    viewModel.errorText = ""
+                    if let amount = Int(viewModel.transactionAmount), amount > 0{
+                        // Add action logic here to save the transaction
+                        if viewModel.selectedType == 0{
+                            viewModel.addTransaction(amount: Int(viewModel.transactionAmount) ?? 0, category: "Income", date: Date(), imageUri: "", name: viewModel.transactionName, source: viewModel.transactionSource, type: "Income", image:uiimage)
+                            
+                            viewModel.clearTextFields()
+                        }
+                        else{
+                            if viewModel.balance-(Float(viewModel.transactionAmount) ?? 0.0) < 0 {
+                                showAlert = true
+                            }
+                            else{
+                                viewModel.addTransaction(amount: -1*(Int(viewModel.transactionAmount) ?? 0), category: CategoryView.expenseCategories[viewModel.selectedExpenseCategory], date: Date(), imageUri: "", name: viewModel.transactionName, source: viewModel.transactionSource, type: "Expense", image:uiimage)
+                                
+                                viewModel.clearTextFields()
+                            }
+                        }
+                        
+                    }else{
+                        viewModel.fieldsAreEmpty = true
+                        viewModel.errorText = "Amount field only accept positive numbers"
+                    }
+                }
+            }else{
+                   viewModel.fieldsAreEmpty = true
+                   viewModel.errorText = "You need to create at least one Tag to creat a new Expense"}
+                      
             }) {
                 Text("Add")
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(viewModel.selectedType == 1 ? Color(hex: "EE446D") : Color(hex: "12CD8A"))
+                    .background(viewModel.selectedType == 1 ? Color(hex:"EE446D") : Color(hex:"12CD8A"))
                     .cornerRadius(10)
             }
             .padding()
+            .alert(isPresented: $showAlert) {
+                Alert(
+                    title: Text("Warning: Negative Balance"),
+                    message: Text("Your expense transaction will result in a negative balance. Are you sure you want to proceed?"),
+                    primaryButton: .destructive(
+                        Text("Confirm"),
+                        action: {
+                            viewModel.addTransaction(amount: -1*(Int(viewModel.transactionAmount) ?? 0), category: CategoryView.expenseCategories[viewModel.selectedExpenseCategory], date: Date(), imageUri: "", name: viewModel.transactionName, source: viewModel.transactionSource, type: "Expense", image:uiimage)
+                            
+                            viewModel.clearTextFields()
+                        }
+                    ),
+                    secondaryButton: .cancel())}
         }
         .background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
         
         // Camera sheet
         .sheet(isPresented: $showImagePicker) {
-            ImagePicker(image: $image, isShowingImage: $isShowingImage)
+            ImagePicker(image: $image, uiimage: $uiimage, isShowingImage: $isShowingImage)
+                .environmentObject(viewModel)
         }
+        
+        .onAppear {
+                    #if os(iOS)
+                    viewModel.motionManager.startAccelerometerUpdates(to: OperationQueue.current!) { (data, error) in
+                        if let data = data {
+                            if data.acceleration.x > 2.0 || data.acceleration.y > 2.0 || data.acceleration.z > 2.0 {
+                                viewModel.clearTextFields()
+                            }
+                        }
+                    }
+                    #endif
+                }
+
+                .onDisappear {
+                    #if os(iOS)
+                    viewModel.motionManager.stopAccelerometerUpdates()
+                    #endif
+                }
+        
+        if viewModel.fieldsAreEmpty {
+            Text(viewModel.errorText)
+                        .foregroundColor(.red)
+                        .font(.caption)
+                        .padding(.top, 10)
+                }
     }
 }
 
@@ -269,20 +361,25 @@ struct AddTransactionView: View {
     
 struct ImagePicker: UIViewControllerRepresentable {
     @Binding var image: Image?
+    @Binding var uiimage: UIImage?
     @Binding var isShowingImage: Bool
     @Environment(\.presentationMode) var presentationMode
+    @StateObject private var viewModel = ContentViewModel()
     
     class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
         let parent: ImagePicker
+        let viewModel: ContentViewModel
         
         init(_ parent: ImagePicker) {
             self.parent = parent
+            self.viewModel = ContentViewModel()
         }
         
         func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
             if let uiImage = info[.originalImage] as? UIImage {
                 parent.image = Image(uiImage: uiImage)
                 parent.isShowingImage = true
+                parent.uiimage = uiImage
             }
             parent.presentationMode.wrappedValue.dismiss()
         }
@@ -312,7 +409,7 @@ func checkAndSendNotificationIfNeeded() {
     print("Checking balance and sending notification")
     let History = HistoryViewModel()
     @State var showNegativeBalanceAlert = false
-    if History.calculateBalance() < 0 {
+    if 5 < 0 {
         // Create a notification content
         
         let content = UNMutableNotificationContent()
