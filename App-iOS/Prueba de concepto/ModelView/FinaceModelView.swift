@@ -769,8 +769,23 @@ final class LoginViewModel: ObservableObject {
             } else {
                 
                 self.isLoggedIn = true
+                UserDefaults.standard.set(true, forKey: "isLoggedIn")
+                UserDefaults.standard.set(email, forKey: "userEmail")
+                UserDefaults.standard.set(password, forKey: "userPass")
+
             }
         }
+    }
+    
+    func autologin() {
+        print("de")
+        if UserDefaults.standard.bool(forKey: "isLoggedIn") == true {
+            self.isLoggedIn = true
+            let emailIn = UserDefaults.standard.string(forKey: "userEmail")
+            let passIn = UserDefaults.standard.string(forKey: "userPass")
+            self.login(email: emailIn!, password: passIn!)
+        }
+        
     }
     
 }
@@ -801,6 +816,9 @@ final class SettingsViewModel: ObservableObject {
     func signOut(){
         do{
             try Auth.auth().signOut()
+            UserDefaults.standard.set(false, forKey: "isLoggedIn")
+            UserDefaults.standard.removeObject(forKey: "userEmail")
+            UserDefaults.standard.removeObject(forKey: "userPass")
         } catch{
             print("DEBUG: Failed to sign out with error \(error.localizedDescription)")
         }
