@@ -103,8 +103,14 @@ struct LoginView: View {
             .padding()
             Spacer()
             }.background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
-        }.navigationBarBackButtonHidden(true)
+        }.onAppear(perform: {
+            viewModel.autologin()
+            if viewModel.isLoggedIn {
+                    self.showNextView = true
+                }
+        } ).navigationBarBackButtonHidden(true)
     }
+    
 }
 
 extension Color {
