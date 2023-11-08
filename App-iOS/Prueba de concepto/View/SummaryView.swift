@@ -52,11 +52,30 @@ import Charts
                             }
                                 
                                             }
-                        Section(header: Text("Totals"), footer: Text("sd")) {
+                        Section(header: Text("Totals"), footer: Text("")) {
                             ForEach(History.totals, id: \.type) { total in
                                                     TotalRow(total: total)
                                                 }
                                             }
+                        
+                        Section(header: Text("Final Balances for Last 3 Months")) {
+                            ForEach(0..<3) { monthIndex in
+                                let currentDate = Date()
+                                let calendar = Calendar.current
+                                let year = calendar.component(.year, from: currentDate)
+                                let month = calendar.component(.month, from: currentDate) - monthIndex
+                                let monthName = calendar.monthSymbols[(month - 1) % 12]
+                                let finalBalance = History.calculateFinalBalanceForMonth(transactions: History.transactions, year: year, month: month)
+                                
+                                HStack {
+                                    Text("\(monthName) \(year)")
+                                        .font(.headline)
+                                        .fontWeight(.bold)
+                                    Spacer()
+                                    Text(String(format: "$%.2f", finalBalance))
+                                                            }
+                            }
+                        }
 
                         
                         Text("Total expenses by category")
@@ -133,4 +152,5 @@ struct PredictionRow: View {
         }
     }
 }
+
     
