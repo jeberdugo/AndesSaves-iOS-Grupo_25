@@ -27,11 +27,55 @@ import Charts
                 Spacer()
                 VStack() {
                     List {
-                        Section(header: Text("Totals")) {
+                        Section(header: Text("Balance Days")) {
+                            
+                            HStack {
+                                Text("Negative Balance Days").font(.headline)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.red)
+                                Spacer()
+                                Text(String(History.negativeBalanceDaysLiveData))
+                            }
+                            HStack {
+                                Text("Positive Balance Days").font(.headline)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.green)
+                                Spacer()
+                                Text(String(History.positiveBalanceDaysLiveData))
+                            }
+                            HStack {
+                                Text("Even Balance Days").font(.headline)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.black)
+                                Spacer()
+                                Text(String(History.evenBalanceDaysLiveData))
+                            }
+                                
+                                            }
+                        Section(header: Text("Totals"), footer: Text("")) {
                             ForEach(History.totals, id: \.type) { total in
                                                     TotalRow(total: total)
                                                 }
                                             }
+                        
+                        Section(header: Text("Final Balances for Last 3 Months")) {
+                            ForEach(0..<3) { monthIndex in
+                                let currentDate = Date()
+                                let calendar = Calendar.current
+                                let year = calendar.component(.year, from: currentDate)
+                                let month = calendar.component(.month, from: currentDate) - monthIndex
+                                let monthName = calendar.monthSymbols[(month - 1) % 12]
+                                let finalBalance = History.calculateFinalBalanceForMonth(transactions: History.transactions, year: year, month: month)
+                                
+                                HStack {
+                                    Text("\(monthName) \(year)")
+                                        .font(.headline)
+                                        .fontWeight(.bold)
+                                    Spacer()
+                                    Text(String(format: "$%.2f", finalBalance))
+                                                            }
+                            }
+                        }
 
                         
                         Text("Total expenses by category")
@@ -53,8 +97,24 @@ import Charts
                                 .foregroundColor(.gray)
                         }
                         // Here
+                        Section(header: Text("Predictions")) {
+                            HStack {
+                                Text("Expenses" )
+                                    .font(.headline)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.red)
+                                Spacer()
+                                if let prediction = History.prediction?.predicted_expense {
+                                                                Text(String(format: "$%.2f", prediction))
+                                                            } else {
+                                                                Text("-")
+                                                            }
+                                
+                            }
+                                            }
                     }
                 }
+                
             }
             .onAppear(){
                 History.listTransactions()
@@ -77,4 +137,20 @@ struct TotalRow: View {
         }
     }
 }
+
+struct PredictionRow: View {
+    var total: Total
+
+    var body: some View {
+        HStack {
+            Text(total.type)
+                .font(.headline)
+                .fontWeight(.bold)
+                .foregroundColor(total.type == "Expenses" ? .red : .green)
+            Spacer()
+            Text(String(format: "$%.2f", total.amount))
+        }
+    }
+}
+
     

@@ -28,6 +28,8 @@ import WebKit
     struct AccountsView: View {
         @StateObject private var viewModel = AccountsViewModel()
         @StateObject private var functions = GlobalFunctions()
+        @StateObject private var networkManager = NetworkMonitor()
+        @State private var isInternetConnected = true
         
         var body: some View {
             ZStack() {
@@ -46,11 +48,22 @@ import WebKit
                     .foregroundColor(functions.isDaytime ? Color.black : Color.white)
                 List(viewModel.accounts, id: \.title) { account in
                     Button(action: {
-                        viewModel.selectedAccountURL = WebSheetItem(urlString: account.link)
+                        if networkManager.isConnected {
+                            viewModel.selectedAccountURL = WebSheetItem(urlString: account.link)
+                        } else{
+                            viewModel.isAlertShowing = true
+                        }
                     }) {
                         AccountRow(account: account)
                     }
                 }
+                .alert(isPresented: $viewModel.isAlertShowing) {
+                           Alert(
+                               title: Text("No Internet Connection"),
+                               message: Text("Please check your internet connection and try again."),
+                               dismissButton: .default(Text("OK"))
+                           )
+                       }
             }.listStyle(PlainListStyle())
                 .background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
                 .sheet(item: $viewModel.selectedAccountURL) { webSheetItem in
@@ -64,6 +77,8 @@ import WebKit
                                 .foregroundColor(.blue)
                         })
                 }
+            }.onReceive(networkManager.$isConnected) { isConnected in
+                isInternetConnected = isConnected
             }
         }
     }

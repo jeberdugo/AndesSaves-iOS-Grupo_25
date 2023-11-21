@@ -70,7 +70,7 @@ struct HistoryView: View {
                                         .onDelete { indexSet in
                                             for index in indexSet {
                                                 let transaction = viewModel.transactions[index]
-                                                viewModel.deleteTransaction(transactionId: transaction.transactionId)
+                                                viewModel.deleteTransaction(transactionId: transaction.transactionId, name: transaction.name)
                                             }
                                         }
                                         .scrollContentBackground(.hidden)
@@ -144,9 +144,10 @@ struct HistoryView: View {
                 Spacer()
             }
             .onAppear {
-                
-                //viewModel.loadImageFromDirectory(fileName: transaction.name)
-                viewModel.retrieveImage(fileName: transaction.transactionId)
+                viewModel.loadImageFromDirectory(fileName: transaction.transactionId)
+                if viewModel.storedImage == nil {
+                       viewModel.retrieveImage(fileName: transaction.transactionId)
+                   }
             }
             .background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
         }

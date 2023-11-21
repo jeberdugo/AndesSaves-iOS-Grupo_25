@@ -12,8 +12,15 @@ import Firebase
 import FirebaseStorage
 import FirebaseFirestore
 import CoreMotion
+import Network
 
 final class ContentViewModel: ObservableObject {
+    
+    init() {
+        loadBalanceFromUserDefaults()
+    }
+    
+    
     @Published public var isAddingTransaction = false
     @Published public var fieldsAreEmpty = false
     @Published public var transactionName = ""
@@ -34,6 +41,27 @@ final class ContentViewModel: ObservableObject {
         transactionAmount = ""
         transactionSource = ""
     }
+    
+    
+    func loadBalanceFromUserDefaults() {
+        if let savedBalance = UserDefaults.standard.value(forKey: "userBalance") as? Float {
+            balance = savedBalance
+        }
+    }
+    
+    func saveBalanceToUserDefaults(_ balance: Float) {
+        UserDefaults.standard.set(balance, forKey: "userBalance")
+    }
+    
+    func removeBalanceFromUserDefaults() {
+        UserDefaults.standard.removeObject(forKey: "userBalance")
+    }
+
+    func updateBalanceInCache(newBalance: Float) {
+        balance = newBalance
+        saveBalanceToUserDefaults(newBalance)
+        // Resto de tu lógica de actualización
+    }
 
     
     func addTransaction(amount: Int, category: String, date: Date, imageUri: String, name: String, source: String, type: String, image: UIImage?){
@@ -42,7 +70,14 @@ final class ContentViewModel: ObservableObject {
             let db = Firestore.firestore()
             let transactionsCollection = db.collection("users").document(user.uid).collection("transactions")
             // Create a new transaction document with a unique identifier
-                    var ref: DocumentReference? = nil
+                var ref: DocumentReference? = nil
+            
+                let group = DispatchGroup()
+                let timerDuration: TimeInterval = 0.5
+                let dispatchTime = DispatchTime.now() + timerDuration
+                var receivedResponse = false
+            
+                    group.enter()
                     ref = transactionsCollection.addDocument(data: [
                         "amount": amount,
                         "category": category,
@@ -53,20 +88,41 @@ final class ContentViewModel: ObservableObject {
                         "type": type
                     ]) { error in
                         if let error = error {
-                            print("Error adding transaction: \(error.localizedDescription)")
+                            DispatchQueue.global().asyncAfter(deadline: dispatchTime) {
+                                let timestamp = Timestamp(date: date)
+                                let transaction = Transaction(amount: Float(amount),
+                                                              category: category,
+                                                              date:  timestamp,
+                                                              imageUri: imageUri,
+                                                              name: name,
+                                                              source: source, transactionId: "0", type: type )
+                                self.balance = self.balance + Float(amount)
+                                self.updateBalance(newBalance: self.balance)
+                                self.loadBalanceFromUserDefaults()
+                        if image != nil{
+                                    self.saveImageFromDirectory(fileName: name, image: image)
+                                }
+                                self.isAddingTransaction = false
+                               // self.historyViewModel.transactions.append(transaction)
+                                //self.historyViewModel.saveTransactionsToCache()
+                            }
                         } else {
+                            receivedResponse = true
+                            group.leave()
                             self.balance = self.balance + Float(amount)
                             self.updateBalance(newBalance: self.balance)
                             print("Transaction added with ID: \(ref!.documentID)")
                             if image != nil{
                                 //self.saveImageFromDirectory(fileName: ref!.documentID, image: image)
                                 self.uploadImage(fileName: ref!.documentID, image: image)
+                                self.saveImageFromDirectory(fileName: ref!.documentID, image: image)
                             }
                             self.isAddingTransaction = false
                         }
                     }
                 }
             }
+    
     
     func updateBalance(newBalance: Float) {
         if let user = Auth.auth().currentUser {
@@ -79,9 +135,11 @@ final class ContentViewModel: ObservableObject {
                 if let error = error {
                     // Handle the error here
                     print("Error updating balance: \(error.localizedDescription)")
+                    self.saveBalanceToUserDefaults(newBalance)
                 } else {
                     // Update successful
                     print("Balance updated successfully")
+                    self.removeBalanceFromUserDefaults()
                 }
             }
         }
@@ -199,68 +257,251 @@ final class HistoryViewModel: ObservableObject {
         return dateFormatter.string(from: date)
     }
     
-    
-    func listTransactions() {
-        transactions.removeAll()
-        if let user = Auth.auth().currentUser {
-            let db = Firestore.firestore()
-            let transactionsCollection = db.collection("users").document(user.uid).collection("transactions")
-            
-
-            transactionsCollection.getDocuments { (snapshot, error) in
-                guard error == nil else {
-                    print(error!.localizedDescription)
-                    return
+    init() {
+        if let transactionsData = UserDefaults.standard.data(forKey: "cachedTransactions") {
+            if let transactionDictionaries = try? PropertyListSerialization.propertyList(from: transactionsData, options: [], format: nil) as? [[String: Any]] {
+                self.transactions = transactionDictionaries.map { dictionary in
+                    return Transaction(
+                        amount: dictionary["amount"] as? Float ?? 0,
+                        category: dictionary["category"] as? String ?? "",
+                        date: dictionary["date"] as? Timestamp ?? Timestamp(),
+                        imageUri: dictionary["imageUri"] as? String ?? "",
+                        name: dictionary["name"] as? String ?? "",
+                        source: dictionary["source"] as? String ?? "",
+                        transactionId: dictionary["transactionId"] as? String ?? "",
+                        type: dictionary["type"] as? String ?? ""
+                    )
                 }
-                
-                if let snapshot = snapshot {
-                    for document in snapshot.documents{
-                            let data = document.data()
-            
-                            let amount = data["amount"] as? Float ?? 0
-                            let category = data["category"] as? String ?? ""
-                        let date = data["date"] as? Timestamp ?? Timestamp()
-                            let imageUri = data["imageUri"] as? String ?? ""
-                            let name = data["name"] as? String ?? ""
-                            let source = data["source"] as? String ?? ""
-                            let transactionId = document.documentID
-                            let type = data["type"] as? String ?? ""
-                            
-                            let transaction = Transaction(amount: amount, category: category, date: date, imageUri: imageUri, name: name, source: source, transactionId: transactionId, type: type)
-                            self.transactions.append(transaction)
-                }
-                    self.expensesByMonth()
-                    self.calculateTotals()
-            }
             }
         }
     }
-    
-    
-    func deleteTransaction(transactionId: String) {
+ 
+    func saveTransactionsToCache() {
+        // Convert transactions to an array of dictionaries
+        let transactionDictionaries: [[String: Any]] = transactions.map { transaction in
+            return [
+                "amount": transaction.amount,
+                "category": transaction.category,
+                "date": transaction.date, // You might need to convert this to a compatible format
+                "imageUri": transaction.imageUri,
+                "name": transaction.name,
+                "source": transaction.source,
+                "type": transaction.type
+            ]
+        }
+
+        // Save the array of dictionaries to a Plist
+        if let transactionsData = try? PropertyListSerialization.data(fromPropertyList: transactionDictionaries, format: .binary, options: 0) {
+            UserDefaults.standard.set(transactionsData, forKey: "cachedTransactions")
+        }
+    }
+
+    func listTransactions() {
+        // Try to load transactions from cache
+        if let cachedTransactionsData = UserDefaults.standard.data(forKey: "cachedTransactions"),
+           let cachedTransactionDictionaries = try? PropertyListSerialization.propertyList(from: cachedTransactionsData, options: [], format: nil) as? [[String: Any]] {
+            
+            let cachedTransactions = cachedTransactionDictionaries.compactMap { dictionary in
+                Transaction(
+                    amount: dictionary["amount"] as? Float ?? 0,
+                    category: dictionary["category"] as? String ?? "",
+                    date: dictionary["date"] as? Timestamp ?? Timestamp(),
+                    imageUri: dictionary["imageUri"] as? String ?? "",
+                    name: dictionary["name"] as? String ?? "",
+                    source: dictionary["source"] as? String ?? "",
+                    transactionId: dictionary["transactionId"] as? String ?? "",
+                    type: dictionary["type"] as? String ?? ""
+                )
+            }
+            
+            // Use cached transactions while fetching from Firebase
+            self.transactions = cachedTransactions
+        }
+
         if let user = Auth.auth().currentUser {
             let db = Firestore.firestore()
             let transactionsCollection = db.collection("users").document(user.uid).collection("transactions")
 
-            // Get a reference to the category document you want to delete
+            transactionsCollection.getDocuments { [weak self] (snapshot, error) in
+                guard let self = self else { return }
+
+                if let error = error {
+                    print("Firebase Error: \(error.localizedDescription)")
+                }
+
+                if let snapshot = snapshot {
+                    var fetchedTransactions = [Transaction]()
+
+                    for document in snapshot.documents {
+                        let data = document.data()
+                        let amount = data["amount"] as? Float ?? 0
+                        let category = data["category"] as? String ?? ""
+                        let date = data["date"] as? Timestamp ?? Timestamp()
+                        let imageUri = data["imageUri"] as? String ?? ""
+                        let name = data["name"] as? String ?? ""
+                        let source = data["source"] as? String ?? ""
+                        let transactionId = document.documentID
+                        let type = data["type"] as? String ?? ""
+
+                        let transaction = Transaction(
+                            amount: amount,
+                            category: category,
+                            date: date,
+                            imageUri: imageUri,
+                            name: name,
+                            source: source,
+                            transactionId: transactionId,
+                            type: type
+                        )
+
+                        fetchedTransactions.append(transaction)
+                    }
+
+                    // Update the transaction list
+                    self.transactions = fetchedTransactions
+
+                    // Save the fetched transactions to the cache
+                    self.saveTransactionsToCache()
+                    self.expensesByMonth()
+                    self.calculateTotals()
+                    self.listPredictions()
+                    self.updateBalanceDays(transactions: self.transactions)
+            }
+        }
+    }
+   }
+    
+    
+    @Published var negativeBalanceDaysLiveData = 0
+           @Published var positiveBalanceDaysLiveData = 0
+           @Published var evenBalanceDaysLiveData = 0
+
+           func updateBalanceDays(transactions: [Transaction]) {
+               var dailyBalances: [Date: Float] = [:]
+
+               for transaction in transactions {
+                   let dateWithoutTime = Calendar.current.startOfDay(for: transaction.date.dateValue())
+                   let amount = transaction.type == "Income" ? transaction.amount : -transaction.amount
+
+                   if dailyBalances[dateWithoutTime] != nil {
+                       dailyBalances[dateWithoutTime]! += amount
+                   } else {
+                       dailyBalances[dateWithoutTime] = amount
+                   }
+               }
+
+               for (_, balance) in dailyBalances {
+                   if balance > 0 {
+                       positiveBalanceDaysLiveData += 1
+                   } else if balance < 0 {
+                       negativeBalanceDaysLiveData += 1
+                   } else {
+                       evenBalanceDaysLiveData += 1
+                   }
+               }
+           }
+    
+    
+    func calculateFinalBalanceForMonth(transactions: [Transaction], year: Int, month: Int) -> Float {
+        let calendar = Calendar.current
+
+        let firstDayOfMonth = calendar.date(from: DateComponents(year: year, month: month, day: 1))!
+        let lastDayOfMonth = calendar.date(from: DateComponents(year: year, month: month + 1, day: 1))!
+
+        var balance: Float = 0
+
+        for transaction in transactions {
+            let transactionDate = transaction.date.dateValue()
+
+            if transactionDate >= firstDayOfMonth && transactionDate < lastDayOfMonth {
+                let amount = transaction.type == "Income" ? transaction.amount : -transaction.amount
+                balance += amount
+            }
+        }
+
+        return balance
+    }
+    
+    
+    @Published public var prediction: Prediction? = nil
+        func listPredictions() {
+            let date = Date()
+                    let calendar = Calendar.current
+                    let month = calendar.component(.month, from: date)
+                    let year = calendar.component(.year, from: date)
+
+            if let user = Auth.auth().currentUser {
+                let db = Firestore.firestore()
+                let predictions = db.collection("users").document(user.uid).collection("predictions").whereField("year", isEqualTo: year).whereField("month", isEqualTo:  month)
+
+                predictions.getDocuments { (snapshot, error) in
+                    guard error == nil else {
+                        print(error!.localizedDescription)
+                        return
+                    }
+
+                    if let snapshot = snapshot {
+                        for document in snapshot.documents{
+                                let data = document.data()
+
+                                let amount = data["predicted_expense"] as? Float ?? 0
+                                let yearIn = data["year"] as? Int ?? 0
+                                let monthIn = data["month"] as? Int ?? 0
+
+
+                                let predicttionIn = Prediction(predicted_expense: amount, month: monthIn, year: yearIn )
+                                self.prediction = predicttionIn
+                    }
+
+                }
+                }
+            }
+        }
+    
+    
+    func deleteTransaction(transactionId: String, name: String) {
+        if let user = Auth.auth().currentUser {
+            let db = Firestore.firestore()
+            let transactionsCollection = db.collection("users").document(user.uid).collection("transactions")
+
             let transactionDocument = transactionsCollection.document(transactionId)
 
-            // Delete the category document
+            let timerDuration: TimeInterval = 0.5
+            let dispatchTime = DispatchTime.now() + timerDuration
+            var receivedResponse = false
+
+            var deletionError: Error?
             transactionDocument.delete { error in
-                if let error = error {
-                    print("Error deleting category: \(error.localizedDescription)")
-                } else {
-                    print("Category deleted successfully")
-                    self.deleteImage(fileName: transactionDocument.documentID)
+                receivedResponse = true
+                deletionError = error
+            }
+
+            DispatchQueue.global().asyncAfter(deadline: dispatchTime) {
+
+                if let error = deletionError {
+                    print("Error deleting transaction: \(error.localizedDescription)")
                     
-                    // Optionally, remove the deleted category from your local array
+    
+                    if let index = self.transactions.firstIndex(where: { $0.name == name }) {
+                        self.transactions.remove(at: index)
+                    }
+                    self.saveTransactionsToCache()
+                    self.deleteImageFromDirectory(fileName: transactionId)
+                    self.deleteImageFromDirectory(fileName: name)
+                } else {
+                    
+                    print("Transaction deleted successfully")
                     if let index = self.transactions.firstIndex(where: { $0.transactionId == transactionId }) {
                         self.transactions.remove(at: index)
+                        self.deleteImageFromDirectory(fileName: transactionId)
+                        self.deleteImageFromDirectory(fileName: name)
+                        self.deleteImage(fileName: transactionId)
                     }
                 }
             }
         }
     }
+
     
     func loadImageFromDirectory(fileName: String){
         let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -279,7 +520,6 @@ final class HistoryViewModel: ObservableObject {
 
         do {
             try FileManager.default.removeItem(at: imagePath)
-            print("Image Deleted from directory")
         } catch {
             print("Failed to delete: " + error.localizedDescription)
         }
@@ -568,7 +808,7 @@ final class TagsViewModel: ObservableObject {
             TagsItem(title: "Add", imageName: "Add")
         ]
     
-    @Published var expenseCategories:  [String] = []
+        @Published var expenseCategories:  [String] = []
     
         @Published var count = 0
 
@@ -593,77 +833,197 @@ final class TagsViewModel: ObservableObject {
         @Published var categoriesWithId = [CategoryWithId]()
         @Published var selectedCategoryId: String?
     
+        private let categoriesCacheKey = "categoriesCache"
+        private var isFetchingCategories = false
+    
+        private var pendingActions: [TagAction] = []
+    
+   
+       init() {
+           if let cachedCategoriesData = UserDefaults.standard.data(forKey: "cachedCategories") {
+               if let cachedCategories = try? JSONDecoder().decode([String].self, from: cachedCategoriesData) {
+                   self.expenseCategories = cachedCategories
+               }
+           }
+
+           if let cachedCategoriesWithIdData = UserDefaults.standard.data(forKey: "cachedCategoriesWithId") {
+               if let cachedCategoriesWithId = try? JSONDecoder().decode([CategoryWithId].self, from: cachedCategoriesWithIdData) {
+                   self.categoriesWithId = cachedCategoriesWithId
+               }
+           }
+       }
+    
+       private func saveCategoriesToCache() {
+           if let categoriesData = try? JSONEncoder().encode(self.expenseCategories) {
+               UserDefaults.standard.set(categoriesData, forKey: "cachedCategories")
+           }
+
+           if let categoriesWithIdData = try? JSONEncoder().encode(self.categoriesWithId) {
+               UserDefaults.standard.set(categoriesWithIdData, forKey: "cachedCategoriesWithId")
+           }
+       }
+    
+    private let pendingActionsCacheKey = "pendingActionsCache"
+
+    private func savePendingActionsToCache() {
+        if let data = try? JSONEncoder().encode(pendingActions) {
+            UserDefaults.standard.set(data, forKey: pendingActionsCacheKey)
+        }
+    }
+
+    private func loadPendingActionsFromCache() {
+        if let data = UserDefaults.standard.data(forKey: pendingActionsCacheKey),
+           let actions = try? JSONDecoder().decode([TagAction].self, from: data) {
+            pendingActions = actions
+        }
+    }
     
     func createCategory(name: String){
         let user = Auth.auth().currentUser
         if let user = user{
             let db = Firestore.firestore()
             let categoriesCollection = db.collection("users").document(user.uid).collection("tags")
-            // Create a new transaction document with a unique identifier
+            
                     var ref: DocumentReference? = nil
+                    let group = DispatchGroup()
+            let timerDuration: TimeInterval = 0.5
+                    let dispatchTime = DispatchTime.now() + timerDuration
+                    var receivedResponse = false
+
+                    group.enter()
                     ref = categoriesCollection.addDocument(data: [
                         "name": name
                     ]) { error in
                         if let error = error {
-                            print("Error adding transaction: \(error.localizedDescription)")
+                            DispatchQueue.global().asyncAfter(deadline: dispatchTime) {
+                                print("Error adding transaction: \(error.localizedDescription)")
+                                let category = CategoryWithId(name: name, categoryId: "" )
+                                let action = TagAction(type: .add, name: name, categoryId: "")
+                                self.pendingActions.append(action)
+                                self.categoriesWithId.append(category)
+                                self.expenseCategories.append(name)
+                                self.saveCategoriesToCache()
+                                self.savePendingActionsToCache()
+                            }
                         } else {
+                            receivedResponse = true
+                            group.leave()
                             print("Transaction added with ID: \(ref!.documentID)")
                         }
                     }
                 }
             listCategories()
             //objectWillChange.send()
-            }
+        }
     
     
     func listCategories() {
-        categoriesWithId.removeAll()
-        self.expenseCategories.removeAll()
-        self.tagCount = 0
+        // Load tags from cache (if available)
+        if let cachedCategories = UserDefaults.standard.data(forKey: "cachedCategories"),
+           let cachedCategoriesWithId = UserDefaults.standard.data(forKey: "cachedCategoriesWithId") {
+            if let decodedCategories = try? JSONDecoder().decode([String].self, from: cachedCategories),
+               let decodedCategoriesWithId = try? JSONDecoder().decode([CategoryWithId].self, from: cachedCategoriesWithId) {
+                DispatchQueue.main.async {
+                    self.expenseCategories = decodedCategories
+                    self.categoriesWithId = decodedCategoriesWithId
+                }
+            }
+        }
+        
+        // Fetch data from Firebase
         if let user = Auth.auth().currentUser {
             let db = Firestore.firestore()
             let categoriesCollection = db.collection("users").document(user.uid).collection("tags")
-            
 
-            categoriesCollection.getDocuments { (snapshot, error) in
-                guard error == nil else {
-                    print(error!.localizedDescription)
-                    return
-                }
-                
-                if let snapshot = snapshot {
-                    for document in snapshot.documents{
-                            let data = document.data()
+            self.expenseCategories.removeAll { $0 == "Add" }
+            self.categoriesWithId.removeAll { $0.name == "Add" }
             
-                            let name = data["name"] as? String ?? ""
-                            let categoryId = document.documentID
-                            
-                            let category = CategoryWithId(name: name, categoryId: categoryId )
-                            self.categoriesWithId.append(category)
-                            self.expenseCategories.append(name)
-                            self.tagCount += 1
+            categoriesCollection.getDocuments { (snapshot, error) in
+                // Handle the data from Firebase
+                if let snapshot = snapshot {
+                    var categories = [String]()
+                    var categoriesWithId = [CategoryWithId]()
+
+                    for document in snapshot.documents {
+                        let data = document.data()
+                        let name = data["name"] as? String ?? ""
+                        let categoryId = document.documentID
+
+                        let category = CategoryWithId(name: name, categoryId: categoryId)
+                        categoriesWithId.append(category)
+                        categories.append(name)
+                    }
+                    
+                    let category = CategoryWithId(name: "Add", categoryId: "0")
+                                        categoriesWithId.append(category)
+
+                    DispatchQueue.main.async {
+                        self.expenseCategories = categories
+                        self.categoriesWithId = categoriesWithId
+                        self.tagCount = self.expenseCategories.count
+
+                        if let categoriesData = try? JSONEncoder().encode(categories) {
+                            UserDefaults.standard.set(categoriesData, forKey: "cachedCategories")
+                        }
+
+                        if let categoriesWithIdData = try? JSONEncoder().encode(categoriesWithId) {
+                            UserDefaults.standard.set(categoriesWithIdData, forKey: "cachedCategoriesWithId")
+                        }
+                    }
+                } else {
+                    // Handle errors here
+                    print(error?.localizedDescription ?? "Unknown error")
                 }
-            }
             }
         }
     }
+
+
     
-    
-    func deleteCategory(categoryId: String) {
-        if let user = Auth.auth().currentUser {
+    func deleteCategory(categoryId: String, name: String) {
+        let user = Auth.auth().currentUser
+        if let user = user {
             let db = Firestore.firestore()
             let categoriesCollection = db.collection("users").document(user.uid).collection("tags")
 
-            // Get a reference to the category document you want to delete
             let categoryDocument = categoriesCollection.document(categoryId)
 
-            // Delete the category document
+            // Set up a timer to trigger after approximately 3 seconds
+            let timerDuration: TimeInterval = 0.5
+            let dispatchTime = DispatchTime.now() + timerDuration
+            var receivedResponse = false
+
+            // Make the Firestore request
+            var deletionError: Error?
             categoryDocument.delete { error in
-                if let error = error {
+                receivedResponse = true
+                deletionError = error
+            }
+
+            // Introduce a delay before handling the response or using cached data
+            DispatchQueue.global().asyncAfter(deadline: dispatchTime) {
+                // This block will be executed after the specified delay (3 seconds)
+
+                if let error = deletionError {
+                    // Handle the case where an error occurred during deletion
                     print("Error deleting category: \(error.localizedDescription)")
-                } else {
-                    print("Category deleted successfully")
                     
+                    let action = TagAction(type: .delete, name: name, categoryId: categoryId)
+                    self.pendingActions.append(action)
+                    
+                    if let index = self.categoriesWithId.firstIndex(where: { $0.name == name }) {
+                        self.categoriesWithId.remove(at: index)
+                    }
+                    if let index = self.expenseCategories.firstIndex(where: { $0 == name }) {
+                        self.expenseCategories.remove(at: index)
+                    }
+                    
+                    self.saveCategoriesToCache()
+                    self.savePendingActionsToCache()
+                } else {
+                    // The deletion was successful
+                    print("Category deleted successfully")
+
                     // Optionally, remove the deleted category from your local array
                     if let index = self.categoriesWithId.firstIndex(where: { $0.categoryId == categoryId }) {
                         self.categoriesWithId.remove(at: index)
@@ -672,6 +1032,7 @@ final class TagsViewModel: ObservableObject {
             }
         }
     }
+
     
 }
 
@@ -775,12 +1136,32 @@ final class AccountsViewModel: ObservableObject {
     ]
 
     @Published public var selectedAccountURL: WebSheetItem? = nil
+    @Published public var isAlertShowing = false
 }
+
+
+
+class NetworkMonitor: ObservableObject {
+    @Published var isConnected = true
+    private let monitor = NWPathMonitor()
+    
+    init() {
+        monitor.pathUpdateHandler = { [weak self] path in
+            DispatchQueue.main.async {
+                self?.isConnected = path.status == .satisfied
+            }
+        }
+        let queue = DispatchQueue(label: "NetworkMonitor")
+        monitor.start(queue: queue)
+    }
+}
+
+
 
 final class SettingsViewModel: ObservableObject {
     @Published public var isLoggingOut = false
     @Published public var isDeletingAccount = false
-    @Published public var isShowAlarm = false
+    @Published public var isAlertShowing = false
     @AppStorage("notificationsEnabled") var notificationsEnabled = false
     
     @Published public var balance: Float = 0
@@ -788,47 +1169,107 @@ final class SettingsViewModel: ObservableObject {
     @Published public var name  = ""
     @Published public var phone = ""
     @Published public var userId = ""
-    
-    func signOut(){
-        do{
-            try Auth.auth().signOut()
-        } catch{
-            print("DEBUG: Failed to sign out with error \(error.localizedDescription)")
-        }
-    }
-    
-    func deleteAccount(){
         
-    }
+        func signOut() {
+            do {
+                try Auth.auth().signOut()
+            } catch {
+                print("DEBUG: Failed to sign out with error \(error.localizedDescription)")
+            }
+        }
     
-    func fetchUser(){
+    
+    func fetchUser() {
+        // Load user data from cache (if available)
+        if let cachedUserData = UserDefaults.standard.data(forKey: "cachedUserData") {
+            if let decodedUserData = try? JSONDecoder().decode(UserData.self, from: cachedUserData) {
+                self.balance = decodedUserData.balance
+                self.email = decodedUserData.email
+                self.name = decodedUserData.name
+                self.phone = decodedUserData.phone
+                self.userId = decodedUserData.userId
+            }
+        }
+
+        // Fetch user data from Firebase
         if let user = Auth.auth().currentUser {
             let db = Firestore.firestore()
             let usersCollection = db.collection("users")
-            
+
+            let group = DispatchGroup()
+            var receivedResponse = false
+
+            group.enter()
 
             usersCollection.getDocuments { (snapshot, error) in
                 guard error == nil else {
-                    print(error!.localizedDescription)
+                    // Handle errors here
+                    DispatchQueue.global().asyncAfter(deadline: .now() + 0.5) {
+                        self.useCachedUserData()
+                    }
+                    group.leave()
                     return
                 }
-                
+
                 if let snapshot = snapshot {
-                    for document in snapshot.documents{
-                            let data = document.data()
-                            let id = data["userId"] as? String ?? ""
-                        if  id == user.uid{
-                            self.balance = data["balance"] as? Float ?? 0
-                            self.email = data["email"] as? String ?? ""
-                            self.name = data["name"] as? String ?? ""
-                            self.phone = data["phone"] as? String ?? ""
-                            self.userId = data["userId"] as? String ?? ""
+                    var userData: UserData?
+
+                    for document in snapshot.documents {
+                        let data = document.data()
+                        let id = data["userId"] as? String ?? ""
+                        if id == user.uid {
+                            userData = UserData(
+                                balance: data["balance"] as? Float ?? 0,
+                                email: data["email"] as? String ?? "",
+                                name: data["name"] as? String ?? "",
+                                phone: data["phone"] as? String ?? "",
+                                userId: id
+                            )
+                            break
                         }
                     }
+
+                    if let userData = userData {
+                        self.updateUserData(userData)
+                    } else {
+                        self.useCachedUserData()
+                    }
+
+                    receivedResponse = true
+                    group.leave()
+                }
+            }
+
+            // Use cached user data if no response within 0.5 seconds
+            DispatchQueue.global().asyncAfter(deadline: .now() + 0.5) {
+                if !receivedResponse {
+                    self.useCachedUserData()
                 }
             }
         }
     }
+
+    func updateUserData(_ userData: UserData) {
+        self.balance = userData.balance
+        self.email = userData.email
+        self.name = userData.name
+        self.phone = userData.phone
+        self.userId = userData.userId
+
+        // Save to cache
+        if let userData = try? JSONEncoder().encode(userData) {
+            UserDefaults.standard.set(userData, forKey: "cachedUserData")
+        }
+    }
+
+    func useCachedUserData() {
+        if let cachedUserData = UserDefaults.standard.data(forKey: "cachedUserData") {
+            if let decodedUserData = try? JSONDecoder().decode(UserData.self, from: cachedUserData) {
+                self.updateUserData(decodedUserData)
+            }
+        }
+    }
+
 }
 
 
