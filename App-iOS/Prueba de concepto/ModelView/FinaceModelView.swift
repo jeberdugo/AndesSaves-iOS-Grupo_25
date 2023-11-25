@@ -761,6 +761,9 @@ final class BudgetsViewModel: ObservableObject {
                 }
                 
                 // Update the cached budget data
+                let newSharedBudget = Budget(documentID: nil, name: name, total: total, contributions: 0, user: user.uid, date: date, type: type)
+                self.budgets.append(newSharedBudget)
+                self.updateCachedBudgets()
             }
         }
     }
@@ -916,9 +919,9 @@ final class BudgetsViewModel: ObservableObject {
                     }
                 }
                     
-                    self.budgets = budgets
-                    self.updateCachedBudgets()
-                    completion(budgets)
+                self.budgets = budgets
+                self.updateCachedBudgets()
+                completion(budgets)
             }
     }
     
@@ -971,9 +974,9 @@ final class BudgetsViewModel: ObservableObject {
                     }
                 }
                     
-                    self.budgets = budgets
-                    self.updateCachedBudgets()
-                    completion(budgets)
+            self.budgets = budgets
+            self.updateCachedBudgets()
+            completion(budgets)
             }
     }
     
