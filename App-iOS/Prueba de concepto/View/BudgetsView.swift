@@ -243,6 +243,8 @@ struct ItemRow: View {
       
       @State private var showNameList = false
       @State private var userIDsAndEmails: [String: String] = [:]
+      
+      @Environment(\.presentationMode) var presentationMode
 
       private func fetchUserEmailsAndIDs() {
           viewModel.fetchUserEmailsAndIDs { emailsAndIDs in
@@ -337,6 +339,7 @@ struct ItemRow: View {
                   viewModel.createBudget(name: budgetName, total: Float(budgetAmount), date: budgetDate, type: selectedType)
                   budgetName=""
                   budgetAmount=0
+                  presentationMode.wrappedValue.dismiss()
                   
                   
               }) {
@@ -345,7 +348,10 @@ struct ItemRow: View {
                       .padding()
                       .background(Color.green)
                       .cornerRadius(10)
-              }.padding()
+              }
+              .padding()
+              .opacity(selectedType == 0 ? 1.0 : 0.0)
+              .disabled(selectedType != 0)
           }
               Spacer()
           }
@@ -498,11 +504,23 @@ struct NameListView: View {
     @State private var checkedItems: Set<String> = []
     @State private var checkedItemsUserIds: Set<String> = []
     @ObservedObject var viewModel = BudgetsViewModel()
+    @Environment(\.presentationMode) var presentationMode
     
 
     var body: some View {
         NavigationView {
+
             VStack {
+                ZStack() {
+                    Color(red: 21/255, green: 191/255, blue: 129/255).edgesIgnoringSafeArea(.all)
+                    VStack {
+                        Text("Group Members")
+                            .font(.title)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                    }
+                }.frame(maxWidth: 400, maxHeight: 60)
+                
                 SearchBar(text: $searchText, isSearching: $isSearching)
 
                 List {
@@ -520,7 +538,8 @@ struct NameListView: View {
                         }
                     }
                 }
-                .navigationBarTitle("Group Members")
+               // .navigationBarTitle("Group Members")
+         
 
                 Button(action: {
                     addCheckedNames()
@@ -530,6 +549,7 @@ struct NameListView: View {
                         date: budgetDate,
                         type: selectedType,
                         userIDs: checkedItemsUserIds)
+                    dismissToFirstView()
                     
                 }) {
                     Text("Add Group Budget")
@@ -561,6 +581,11 @@ struct NameListView: View {
                 checkedItemsUserIds.insert(userID)
             }
         }
+    }
+    
+    func dismissToFirstView() {
+        presentationMode.wrappedValue.dismiss() // Dismiss the third view
+        presentationMode.wrappedValue.dismiss() // Dismiss the second view
     }
     
 }
