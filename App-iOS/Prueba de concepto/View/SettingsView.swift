@@ -14,10 +14,11 @@ struct SettingsView: View {
     @StateObject private var viewModel = SettingsViewModel()
     @StateObject private var networkManager = NetworkMonitor()
     @State private var isInternetConnected = true
-    
-    
+    @State private var isShowingSuggestionView = false
+    @State private var isShowingUsefulLinksView = false
+
     var body: some View {
-        ZStack() {
+        ZStack {
             Color(red: 21/255, green: 191/255, blue: 129/255).edgesIgnoringSafeArea(.all)
             VStack {
                 Text("Settings")
@@ -27,70 +28,68 @@ struct SettingsView: View {
             }
         }
         .frame(maxWidth: 400, maxHeight: 60)
-        
+
         Spacer()
-        
-        List{
-            Section{
-                HStack{
-                    
+
+        List {
+            Section {
+                HStack {
                     Image(systemName: "person.circle.fill")
                         .imageScale(.large)
                         .foregroundColor(.gray)
                         .font(.title)
                         .frame(width: 72, height: 72)
-                    
-                    VStack(alignment: .leading, spacing: 7){
+
+                    VStack(alignment: .leading, spacing: 7) {
                         Text(viewModel.name)
                             .font(.headline)
                             .fontWeight(.semibold)
                             .padding(.top, 4)
-                        
+
                         Text(viewModel.email)
                             .font(.footnote)
                             .accentColor(.gray)
                     }
                 }
             }
-            
-            Section("General"){
-                HStack(spacing: 12){
+
+            Section("General") {
+                HStack(spacing: 12) {
                     Image(systemName: "gear.circle.fill")
                         .imageScale(.small)
                         .foregroundColor(.gray)
                         .font(.title)
                         .frame(width: 20, height: 20)
-                    
-                    SectionView(title: "Currency")
+
+                    SectionView(title: "Version")
                         .font(.subheadline)
                         .foregroundColor(.black)
-                    
+
                     Spacer()
-                    
+
                     Text("2.0.0")
                         .font(.subheadline)
                         .foregroundColor(.gray)
                         .padding(5)
                 }
-                
-                HStack(spacing: 12){
+
+                HStack(spacing: 12) {
                     Image(systemName: "bell.circle.fill")
                         .imageScale(.small)
                         .foregroundColor(.gray)
                         .font(.title)
                         .frame(width: 20, height: 20)
-                    
+
                     SectionView(title: "Notifications")
                         .font(.subheadline)
                         .foregroundColor(.black)
-                    
+
                     Spacer()
-                    
-                    Toggle("", isOn: $viewModel.notificationsEnabled) // Add a Toggle switch
+
+                    Toggle("", isOn: $viewModel.notificationsEnabled)
                         .padding(.trailing, 16)
                         .foregroundColor(.blue)
                         .onChange(of: viewModel.notificationsEnabled) { newValue in
-                            // Handle the toggle state change here
                             if newValue {
                                 requestNotificationAuthorization()
                             } else {
@@ -98,91 +97,116 @@ struct SettingsView: View {
                             }
                         }
                 }
-            }
-            
-            Section("Accounts"){
-                
-                        Button{
-                            let isConnected = networkManager.isConnected
-                            if networkManager.isConnected {
-                                print("Sign Out..")
-                                viewModel.signOut()
-                                viewModel.isLoggingOut.toggle()
-                            } else{
-                                viewModel.isAlertShowing = true
-                            }
-                        }label: {
-                            HStack(spacing: 12){
-                                Image(systemName: "arrow.left.circle.fill")
-                                    .foregroundColor(.red)
-                                    .imageScale(.small)
-                                    .font(.title)
-                                    .frame(width: 20, height: 20)
-                                
-                                SectionView(title: "Sign Out")
-                                    .font(.subheadline)
-                                    .foregroundColor(.black)
-                            }
-                        }
-                        .fullScreenCover(isPresented: $viewModel.isLoggingOut) {
-                                    LoginView()
-                                }
 
-                    
-                /*
-                        Button{
-                            viewModel.isShowAlarm = true
-                            
-                        }label: {
-                            HStack(spacing: 12){
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundColor(.red)
-                                    .imageScale(.small)
-                                    .font(.title)
-                                    .frame(width: 20, height: 20)
-                                
-                                SectionView(title: "Delete Account")
-                                    .font(.subheadline)
-                                    .foregroundColor(.red)
-                            }
+                HStack(spacing: 12) {
+                    Image(systemName: "square.and.pencil")
+                        .imageScale(.small)
+                        .foregroundColor(.gray)
+                        .font(.title)
+                        .frame(width: 20, height: 20)
+
+                    SectionView(title: "Send Suggestion")
+                        .font(.subheadline)
+                        .foregroundColor(.black)
+
+                    Spacer()
+
+                    Button(action: {
+                        if networkManager.isConnected {
+                            print("Sign Out..")
+                            isShowingSuggestionView.toggle()
+                        } else {
+                            viewModel.isAlertShowing = true
                         }
-                        .fullScreenCover(isPresented: $viewModel.isDeletingAccount) {
-                                    LoginView()
-                                }
-                    .alert(isPresented: $viewModel.isShowAlarm) {
-                        Alert(
-                            title: Text("Warning: Delete Account"),
-                            message: Text("are you sure you want to delete your account permantly?"),
-                            primaryButton: .destructive(
-                                Text("Confirm"),
-                                action: {
-                                    print("Delete Account..")
-                                    viewModel.deleteAccount()
-                                    viewModel.isDeletingAccount.toggle()
-                                }
-                            ),
-                            secondaryButton: .cancel())}
-                 */
+                    }) {
+                        Image(systemName: "arrow.right.circle.fill")
+                            .foregroundColor(.green)
+                            .imageScale(.small)
+                            .font(.title)
+                            .frame(width: 20, height: 20)
+                    }
+                    .sheet(isPresented: $isShowingSuggestionView) {
+                        SuggestionFeedbackView(isPresented: $isShowingSuggestionView)
+                    }
+                }
+                
+                HStack(spacing: 12) {
+                    Image(systemName: "link.circle.fill")
+                        .imageScale(.small)
+                        .foregroundColor(.gray)
+                        .font(.title)
+                        .frame(width: 20, height: 20)
+                    
+                    SectionView(title: "Useful Links")
+                        .font(.subheadline)
+                        .foregroundColor(.black)
+                    
+                    Spacer()
+
+                    Button(action: {
+                        if networkManager.isConnected {
+                            print("Sign Out..")
+                            isShowingUsefulLinksView.toggle()
+                        } else {
+                            viewModel.isAlertShowing = true
+                        }
+                    }) {
+                        Image(systemName: "arrow.right.circle.fill")
+                            .foregroundColor(.green)
+                            .imageScale(.small)
+                            .font(.title)
+                            .frame(width: 20, height: 20)
+                    }
+                    .sheet(isPresented: $isShowingUsefulLinksView, content: {
+                            UsefulLinksView(isPresented: $isShowingUsefulLinksView)
+                        })
+                }
+            }
+
+            Section("Accounts") {
+                Button {
+                    if networkManager.isConnected {
+                        print("Sign Out..")
+                        viewModel.signOut()
+                        viewModel.isLoggingOut.toggle()
+                    } else {
+                        viewModel.isAlertShowing = true
+                    }
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "arrow.left.circle.fill")
+                            .foregroundColor(.red)
+                            .imageScale(.small)
+                            .font(.title)
+                            .frame(width: 20, height: 20)
+
+                        SectionView(title: "Sign Out")
+                            .font(.subheadline)
+                            .foregroundColor(.black)
+                    }
+                }
+                .fullScreenCover(isPresented: $viewModel.isLoggingOut) {
+                    LoginView()
+                }
             }
             .alert(isPresented: $viewModel.isAlertShowing) {
-                       Alert(
-                           title: Text("No Internet Connection"),
-                           message: Text("Please check your internet connection and try again."),
-                           dismissButton: .default(Text("OK"))
-                       )
-                   }
+                Alert(
+                    title: Text("No Internet Connection"),
+                    message: Text("Please check your internet connection and try again."),
+                    dismissButton: .default(Text("OK"))
+                )
+            }
         }
         .listStyle(PlainListStyle())
         .onReceive(networkManager.$isConnected) { isConnected in
             isInternetConnected = isConnected
         }
         .onAppear {
-            
             viewModel.fetchUser()
         }
-        
     }
 }
+
 
 struct SectionView: View {
     var title: String
@@ -250,5 +274,94 @@ func disableNotifications() {
             center.removeDeliveredNotifications(withIdentifiers: ["" /* Add notification identifiers here if needed */])
             center.removePendingNotificationRequests(withIdentifiers: ["" /* Add notification request identifiers here if needed */])
         }
+    }
+}
+
+
+struct SuggestionFeedbackView: View {
+    @Binding var isPresented: Bool
+    @State private var suggestionText = "Type your suggestion or claim here..."
+    private let maxCharacterCount = 150
+    @State private var showAlert = false
+    
+    var body: some View {
+        ZStack {
+            Color(red: 21/255, green: 191/255, blue: 129/255).edgesIgnoringSafeArea(.all)
+            VStack {
+                Text("Settings")
+                    .font(.title)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+            }
+        }
+        .frame(maxWidth: 400, maxHeight: 60)
+
+        Spacer()
+        
+        VStack {
+            TextEditor(text: $suggestionText)
+                .frame(minHeight: 150)
+                .padding()
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(8)
+                .padding()
+                .onTapGesture {
+                    if suggestionText == "Type your suggestion or claim here..." {
+                    suggestionText = ""
+                        }
+                    }
+            
+            Text("\(suggestionText.count)/\(maxCharacterCount) characters")
+                .foregroundColor(suggestionText.count > maxCharacterCount ? .red : .gray)
+                .padding(.bottom)
+            
+            Button(action: {
+                           if suggestionText.count <= maxCharacterCount {
+                               print("Submitted suggestion: \(suggestionText)")
+                               isPresented.toggle()
+                           } else {
+                               showAlert = true
+                               print("Suggestion exceeds the character limit.")
+                           }
+            }) {
+                Text("Submit")
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color(hex:"12CD8A"))
+                    .cornerRadius(10)
+            }
+            .alert(isPresented: $showAlert) {
+                            Alert(
+                                title: Text("Exceeded Character Limit"),
+                                message: Text("Your suggestion exceeds the maximum limit of \(maxCharacterCount) characters."),
+                                dismissButton: .default(Text("OK"))
+                            )
+                        }
+            
+            Spacer()
+        }
+        .padding()
+    }
+}
+
+
+struct UsefulLinksView: View {
+    @Binding var isPresented: Bool
+    var body: some View {
+        VStack {
+            Text("Useful Links")
+                .font(.title)
+                .fontWeight(.bold)
+                .padding()
+
+            // Add your useful links here
+            Link("Link 1", destination: URL(string: "https://www.link1.com")!)
+            Link("Link 2", destination: URL(string: "https://www.link2.com")!)
+            // Add more links as needed
+
+            Spacer()
+        }
+        .padding()
     }
 }
