@@ -281,9 +281,13 @@ func disableNotifications() {
 
 struct SuggestionFeedbackView: View {
     @Binding var isPresented: Bool
+    @StateObject private var viewModel = SettingsViewModel()
     @State private var suggestionText = "Type your suggestion or claim here..."
     private let maxCharacterCount = 150
     @State private var showAlert = false
+    @State private var isSuccess: Bool?
+    @State private var title = ""
+    @State private var message = ""
     
     var body: some View {
         ZStack {
@@ -317,12 +321,27 @@ struct SuggestionFeedbackView: View {
                 .padding(.bottom)
             
             Button(action: {
-                           if suggestionText.count <= maxCharacterCount {
-                               print("Submitted suggestion: \(suggestionText)")
-                               isPresented.toggle()
-                           } else {
-                               showAlert = true
-                               print("Suggestion exceeds the character limit.")
+                if suggestionText.count <= maxCharacterCount {
+                    print("Submitted suggestion: \(suggestionText)")
+
+                    viewModel.addSuggestion(text: suggestionText) { isSuccess in
+                        if isSuccess {
+                            // Suggestion added successfully
+                            print("Suggestion added successfully!")
+                            isPresented.toggle()
+                        } else {
+                            // Failed to add suggestion
+                            title = "Internet Connection Problem"
+                            message = "Check your internet connection and try again"
+                            showAlert = true
+                            print("Failed to add suggestion.")
+                        }
+                    }
+                } else {
+                    title = "Exceeded Character Limit"
+                    message = "Your suggestion exceeds the maximum limit of \(maxCharacterCount) characters."
+                    showAlert = true
+                    print("Suggestion exceeds the character limit.")
                            }
             }) {
                 Text("Submit")
@@ -334,8 +353,8 @@ struct SuggestionFeedbackView: View {
             }
             .alert(isPresented: $showAlert) {
                             Alert(
-                                title: Text("Exceeded Character Limit"),
-                                message: Text("Your suggestion exceeds the maximum limit of \(maxCharacterCount) characters."),
+                                title: Text(title),
+                                message: Text(message),
                                 dismissButton: .default(Text("OK"))
                             )
                         }

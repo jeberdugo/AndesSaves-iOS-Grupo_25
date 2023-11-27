@@ -1177,6 +1177,7 @@ final class SettingsViewModel: ObservableObject {
     @Published public var isLoggingOut = false
     @Published public var isDeletingAccount = false
     @Published public var isAlertShowing = false
+    
     @AppStorage("notificationsEnabled") var notificationsEnabled = false
     
     @Published public var balance: Float = 0
@@ -1288,6 +1289,52 @@ final class SettingsViewModel: ObservableObject {
             }
         }
     }
+    
+    
+    func addSuggestion(text: String, completion: @escaping (Bool) -> Void) {
+        let user = Auth.auth().currentUser
+
+        if let user = user {
+            let db = Firestore.firestore()
+            let suggestionsCollection = db.collection("users").document(user.uid).collection("suggestions")
+
+            var ref: DocumentReference? = nil
+            let group = DispatchGroup()
+
+            group.enter()
+
+            ref = suggestionsCollection.addDocument(data: ["text": text]) { error in
+                DispatchQueue.main.async {
+                    if let error = error {
+                        // Handle error on the main thread
+                        completion(false)
+                        print("An error has occurred: \(error)")
+
+                        // Show an alert here if needed
+                    } else {
+                        // Operation successful
+                        group.leave()
+                        print("Transaction added with ID: \(ref!.documentID)")
+                        completion(true)
+                    }
+                }
+            }
+
+            // Optionally, add a timeout for the operation
+            let timerDuration: TimeInterval = 0.5
+            let dispatchTime = DispatchTime.now() + timerDuration
+
+            // Wait for the operation to finish or timeout
+            if group.wait(timeout: dispatchTime) == .timedOut {
+                // Handle timeout if needed
+                DispatchQueue.main.async {
+                    completion(false)
+                    print("Operation timed out.")
+                }
+            }
+        }
+    }
+
 
 }
 
