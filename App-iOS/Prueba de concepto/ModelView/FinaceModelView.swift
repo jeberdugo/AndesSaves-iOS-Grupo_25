@@ -239,7 +239,7 @@ final class MainMenuViewModel: ObservableObject {
         MenuItem(title: "Budgets", imageName: "Budgets"),
         MenuItem(title: "Tags", imageName: "Tags"),
         MenuItem(title: "Summary", imageName: "Summary"),
-        MenuItem(title: "Accounts", imageName: "Accounts"),
+        MenuItem(title: "News", imageName: "News"),
         MenuItem(title: "Settings", imageName: "Settings")
     ]
 }
