@@ -447,7 +447,7 @@ func destinationView(for menuItem: MenuItem) -> some View {
     case "Summary":
         return AnyView(SummaryView())
     case "News":
-        return AnyView(AccountsView())
+        return AnyView(NewsListView())
     case "Settings":
         return AnyView(SettingsView())
         

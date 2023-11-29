@@ -1338,6 +1338,90 @@ final class SettingsViewModel: ObservableObject {
 
 }
 
+final class NewsViewModel: ObservableObject {
+    @Published var news: [News] = [
+        News(headline: "Breaking News 1", author: "John Doe", date: "Nov 1, 2023", content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.", image: "news1"),
+        News(headline: "Important Update", author: "Jane Smith", date: "Nov 2, 2023", content: "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.", image: "news2"),
+        // Add more news items as needed
+    ]
+    
+    @Published var newsWithId = [NewWithId]()
+    
+    func fetchNews() {
+            // Load news data from cache (if available)
+            if let cachedNewsData = UserDefaults.standard.data(forKey: "cachedNewsData") {
+                if let decodedNewsData = try? JSONDecoder().decode([NewWithId].self, from: cachedNewsData) {
+                    self.newsWithId = decodedNewsData
+                }
+            }
+
+            // Fetch news data from Firebase
+            if let user = Auth.auth().currentUser {
+                let db = Firestore.firestore()
+                let newsCollection = db.collection("News")
+
+                let group = DispatchGroup()
+                var receivedResponse = false
+
+                group.enter()
+
+                newsCollection.getDocuments { (snapshot, error) in
+                    guard error == nil else {
+                        // Handle errors here
+                        DispatchQueue.global().asyncAfter(deadline: .now() + 0.5) {
+                            self.useCachedNewsData()
+                        }
+                        group.leave()
+                        return
+                    }
+
+                    if let snapshot = snapshot {
+                        var newsData = [NewWithId]()
+
+                        for document in snapshot.documents {
+                            let data = document.data()
+                            let id = document.documentID
+                            let headline = data["headline"] as? String ?? ""
+                            let author = data["author"] as? String ?? ""
+                            let date = data["date"] as? String ?? ""
+                            let content = data["content"] as? String ?? ""
+                            let image = data["image"] as? String ?? ""
+
+                            let news = NewWithId(newId: id, headline: headline, author: author, date: date, content: content, image: image)
+                            newsData.append(news)
+                        }
+
+                        self.newsWithId = newsData
+
+                        // Save to cache
+                        if let newsData = try? JSONEncoder().encode(newsData) {
+                            UserDefaults.standard.set(newsData, forKey: "cachedNewsData")
+                        }
+
+                        receivedResponse = true
+                        group.leave()
+                    }
+                }
+
+                // Use cached news data if no response within 0.5 seconds
+                DispatchQueue.global().asyncAfter(deadline: .now() + 0.5) {
+                    if !receivedResponse {
+                        self.useCachedNewsData()
+                    }
+                }
+            }
+        }
+
+        // Function to use cached news data
+        func useCachedNewsData() {
+            if let cachedNewsData = UserDefaults.standard.data(forKey: "cachedNewsData") {
+                if let decodedNewsData = try? JSONDecoder().decode([NewWithId].self, from: cachedNewsData) {
+                    self.newsWithId = decodedNewsData
+                }
+            }
+        }
+}
+
 
 final class GlobalFunctions: ObservableObject {
 // Contex aware feature: Cambia los colores de la vista dependiendo de la hora
