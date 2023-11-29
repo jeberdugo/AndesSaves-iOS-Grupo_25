@@ -239,7 +239,7 @@ final class MainMenuViewModel: ObservableObject {
         MenuItem(title: "Budgets", imageName: "Budgets"),
         MenuItem(title: "Tags", imageName: "Tags"),
         MenuItem(title: "Summary", imageName: "Summary"),
-        MenuItem(title: "Accounts", imageName: "Accounts"),
+        MenuItem(title: "News", imageName: "News"),
         MenuItem(title: "Settings", imageName: "Settings")
     ]
 }
@@ -1177,6 +1177,7 @@ final class SettingsViewModel: ObservableObject {
     @Published public var isLoggingOut = false
     @Published public var isDeletingAccount = false
     @Published public var isAlertShowing = false
+    
     @AppStorage("notificationsEnabled") var notificationsEnabled = false
     
     @Published public var balance: Float = 0
@@ -1288,7 +1289,170 @@ final class SettingsViewModel: ObservableObject {
             }
         }
     }
+    
+    
+    func addSuggestion(text: String, completion: @escaping (Bool) -> Void) {
+        let user = Auth.auth().currentUser
 
+        if let user = user {
+            let db = Firestore.firestore()
+            let suggestionsCollection = db.collection("users").document(user.uid).collection("suggestions")
+
+            var ref: DocumentReference? = nil
+            let group = DispatchGroup()
+
+            group.enter()
+
+            ref = suggestionsCollection.addDocument(data: ["text": text]) { error in
+                DispatchQueue.main.async {
+                    if let error = error {
+                        // Handle error on the main thread
+                        completion(false)
+                        print("An error has occurred: \(error)")
+
+                        // Show an alert here if needed
+                    } else {
+                        // Operation successful
+                        group.leave()
+                        print("Transaction added with ID: \(ref!.documentID)")
+                        completion(true)
+                    }
+                }
+            }
+
+            // Optionally, add a timeout for the operation
+            let timerDuration: TimeInterval = 0.5
+            let dispatchTime = DispatchTime.now() + timerDuration
+
+            // Wait for the operation to finish or timeout
+            if group.wait(timeout: dispatchTime) == .timedOut {
+                // Handle timeout if needed
+                DispatchQueue.main.async {
+                    completion(false)
+                    print("Operation timed out.")
+                }
+            }
+        }
+    }
+    
+    @Published var numSuggestions: Int = 0
+    
+    func countUserSuggestions() {
+        // Attempt to load numSuggestions from cache
+        if let cachedNumSuggestions = UserDefaults.standard.value(forKey: "cachedNumSuggestions") as? Int {
+            self.numSuggestions = cachedNumSuggestions
+        }
+
+        let user = Auth.auth().currentUser
+
+        if let user = user {
+            let db = Firestore.firestore()
+            let suggestionsCollection = db.collection("users").document(user.uid).collection("suggestions")
+
+            suggestionsCollection.getDocuments { (snapshot, error) in
+                guard error == nil else {
+                    // Handle errors here, and use cached value if available
+                    print("An error has occurred: \(error!)")
+                    return
+                }
+
+                if let snapshot = snapshot {
+                    self.numSuggestions = snapshot.documents.count
+
+                    // Save numSuggestions to cache
+                    UserDefaults.standard.set(self.numSuggestions, forKey: "cachedNumSuggestions")
+                }
+            }
+        } else {
+            print("An error has occurred")
+        }
+    }
+
+
+}
+
+final class NewsViewModel: ObservableObject {
+    @Published var news: [News] = [
+        News(headline: "Breaking News 1", author: "John Doe", date: "Nov 1, 2023", content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.", image: "news1"),
+        News(headline: "Important Update", author: "Jane Smith", date: "Nov 2, 2023", content: "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.", image: "news2"),
+        // Add more news items as needed
+    ]
+    
+    @Published var newsWithId = [NewWithId]()
+    
+    func fetchNews() {
+            // Load news data from cache (if available)
+            if let cachedNewsData = UserDefaults.standard.data(forKey: "cachedNewsData") {
+                if let decodedNewsData = try? JSONDecoder().decode([NewWithId].self, from: cachedNewsData) {
+                    self.newsWithId = decodedNewsData
+                }
+            }
+
+            // Fetch news data from Firebase
+            if let user = Auth.auth().currentUser {
+                let db = Firestore.firestore()
+                let newsCollection = db.collection("News")
+
+                let group = DispatchGroup()
+                var receivedResponse = false
+
+                group.enter()
+
+                newsCollection.getDocuments { (snapshot, error) in
+                    guard error == nil else {
+                        // Handle errors here
+                        DispatchQueue.global().asyncAfter(deadline: .now() + 0.5) {
+                            self.useCachedNewsData()
+                        }
+                        group.leave()
+                        return
+                    }
+
+                    if let snapshot = snapshot {
+                        var newsData = [NewWithId]()
+
+                        for document in snapshot.documents {
+                            let data = document.data()
+                            let id = document.documentID
+                            let headline = data["headline"] as? String ?? ""
+                            let author = data["author"] as? String ?? ""
+                            let date = data["date"] as? String ?? ""
+                            let content = data["content"] as? String ?? ""
+                            let image = data["image"] as? String ?? ""
+
+                            let news = NewWithId(newId: id, headline: headline, author: author, date: date, content: content, image: image)
+                            newsData.append(news)
+                        }
+
+                        self.newsWithId = newsData
+
+                        // Save to cache
+                        if let newsData = try? JSONEncoder().encode(newsData) {
+                            UserDefaults.standard.set(newsData, forKey: "cachedNewsData")
+                        }
+
+                        receivedResponse = true
+                        group.leave()
+                    }
+                }
+
+                // Use cached news data if no response within 0.5 seconds
+                DispatchQueue.global().asyncAfter(deadline: .now() + 0.5) {
+                    if !receivedResponse {
+                        self.useCachedNewsData()
+                    }
+                }
+            }
+        }
+
+        // Function to use cached news data
+        func useCachedNewsData() {
+            if let cachedNewsData = UserDefaults.standard.data(forKey: "cachedNewsData") {
+                if let decodedNewsData = try? JSONDecoder().decode([NewWithId].self, from: cachedNewsData) {
+                    self.newsWithId = decodedNewsData
+                }
+            }
+        }
 }
 
 
