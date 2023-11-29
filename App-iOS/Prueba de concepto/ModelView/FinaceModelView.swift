@@ -1334,6 +1334,39 @@ final class SettingsViewModel: ObservableObject {
             }
         }
     }
+    
+    @Published var numSuggestions: Int = 0
+    
+    func countUserSuggestions() {
+        // Attempt to load numSuggestions from cache
+        if let cachedNumSuggestions = UserDefaults.standard.value(forKey: "cachedNumSuggestions") as? Int {
+            self.numSuggestions = cachedNumSuggestions
+        }
+
+        let user = Auth.auth().currentUser
+
+        if let user = user {
+            let db = Firestore.firestore()
+            let suggestionsCollection = db.collection("users").document(user.uid).collection("suggestions")
+
+            suggestionsCollection.getDocuments { (snapshot, error) in
+                guard error == nil else {
+                    // Handle errors here, and use cached value if available
+                    print("An error has occurred: \(error!)")
+                    return
+                }
+
+                if let snapshot = snapshot {
+                    self.numSuggestions = snapshot.documents.count
+
+                    // Save numSuggestions to cache
+                    UserDefaults.standard.set(self.numSuggestions, forKey: "cachedNumSuggestions")
+                }
+            }
+        } else {
+            print("An error has occurred")
+        }
+    }
 
 
 }
