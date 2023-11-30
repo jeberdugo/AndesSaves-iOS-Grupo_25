@@ -13,6 +13,7 @@ import FirebaseStorage
 import FirebaseFirestore
 import CoreMotion
 import Network
+import Reachability
 
 final class ContentViewModel: ObservableObject {
     
@@ -1291,6 +1292,7 @@ final class SettingsViewModel: ObservableObject {
     }
     
     
+
     func addSuggestion(text: String, completion: @escaping (Bool) -> Void) {
         let user = Auth.auth().currentUser
 
@@ -1298,42 +1300,32 @@ final class SettingsViewModel: ObservableObject {
             let db = Firestore.firestore()
             let suggestionsCollection = db.collection("users").document(user.uid).collection("suggestions")
 
-            var ref: DocumentReference? = nil
-            let group = DispatchGroup()
+            let reachability = try! Reachability()
 
-            group.enter()
+            if reachability.connection == .unavailable {
+                // No internet connection
+                completion(false)
+                print("No internet connection.")
+                return
+            }
 
-            ref = suggestionsCollection.addDocument(data: ["text": text]) { error in
+            suggestionsCollection.addDocument(data: ["text": text]) { error in
                 DispatchQueue.main.async {
                     if let error = error {
-                        // Handle error on the main thread
+                        // Handle other errors
                         completion(false)
                         print("An error has occurred: \(error)")
-
-                        // Show an alert here if needed
                     } else {
                         // Operation successful
-                        group.leave()
-                        print("Transaction added with ID: \(ref!.documentID)")
+                        print("Suggestion added successfully!")
                         completion(true)
                     }
                 }
             }
-
-            // Optionally, add a timeout for the operation
-            let timerDuration: TimeInterval = 0.5
-            let dispatchTime = DispatchTime.now() + timerDuration
-
-            // Wait for the operation to finish or timeout
-            if group.wait(timeout: dispatchTime) == .timedOut {
-                // Handle timeout if needed
-                DispatchQueue.main.async {
-                    completion(false)
-                    print("Operation timed out.")
-                }
-            }
         }
     }
+
+
     
     @Published var numSuggestions: Int = 0
     
