@@ -17,6 +17,8 @@ struct ContentView: View {
     @StateObject private var functions = GlobalFunctions()
     @StateObject private var History = HistoryViewModel()
     @StateObject private var CategoryView = TagsViewModel()
+    @StateObject var networkMonitor = NetworkMonitor()
+    
     
     var body: some View {
         NavigationView {
@@ -26,6 +28,7 @@ struct ContentView: View {
                 VStack() {
                     Spacer(minLength: 20)
                     VStack() {
+                        
                         //Color(red: 78, green: 147, blue: 122)
                         Spacer(minLength: 5)
                         Text("BALANCE")

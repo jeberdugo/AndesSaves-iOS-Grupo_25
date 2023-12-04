@@ -12,11 +12,46 @@ import FirebaseCore
 struct Prueba_de_conceptoApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject var loginViewModel = LoginViewModel()
+    @StateObject var networkMonitor = NetworkMonitor()
+    @State private var show = true;
     
     var body: some Scene {
         WindowGroup {
             LoginView().environmentObject(loginViewModel)
-            
+                .overlay(
+                                    Group {
+                                        if !networkMonitor.isConnected && show{
+                                            HStack {
+
+                                                VStack {
+                                                    HStack {
+                                                        Text("No Internet Connection. Transactions and budgets can be shown later.")
+                                                            .foregroundColor(.white)
+                                                            .padding()
+                                                            .background(Color.red)
+                                                            .cornerRadius(10)
+
+                                                        Button(action: {
+                                                            withAnimation {
+                                                                self.show = false
+                                                            }
+                                                        }) {
+                                                            Image(systemName: "xmark")
+                                                                .foregroundColor(.white)
+                                                                .padding()
+                                                        }
+                                                    }
+                                                    .background(Color.red)
+                                                    .cornerRadius(10)
+                                                    Spacer()
+                                                }
+                                            }
+                                            .transition(.move(edge: .top))
+                                            .animation(.spring())
+
+                                        }
+                                    }
+                                )
                 .onAppear {
                     appDelegate.orientationLock = .portrait
                 }

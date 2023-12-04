@@ -12,8 +12,6 @@ struct LoginView: View {
     @StateObject private var settingsView = SettingsViewModel()
     @StateObject private var Contentview = ContentViewModel()
     
-    
-
     var body: some View {
         NavigationView {
             VStack{
@@ -69,10 +67,11 @@ struct LoginView: View {
                 
                 
                 Button(action: {
-                    viewModel.login(email: self.email, password: self.password)
-                    if viewModel.isLoggedIn {
-                            self.showNextView = true
-                        }
+                    viewModel.login(email: self.email, password: self.password){ success in
+                                            if success {
+                                                self.showNextView = true
+                                            }
+                                        }
                     
                 }) {
                     Text("Login")

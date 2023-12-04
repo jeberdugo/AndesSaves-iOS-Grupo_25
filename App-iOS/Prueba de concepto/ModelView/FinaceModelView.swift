@@ -1107,7 +1107,7 @@ final class LoginViewModel: ObservableObject {
     @Published var user = ""
     @Published var message = ""
     
-    func login(email: String, password: String ) {
+    func login(email: String, password: String , completion: @escaping (Bool) -> Void)  {
         self.isShowAlarm = false
         Auth.auth().signIn(withEmail: email, password: password){ result, error in
             if error != nil {
@@ -1124,7 +1124,7 @@ final class LoginViewModel: ObservableObject {
                 UserDefaults.standard.set(true, forKey: "isLoggedIn")
                 UserDefaults.standard.set(email, forKey: "userEmail")
                 UserDefaults.standard.set(password, forKey: "userPass")
-
+                completion(self.isLoggedIn)
             }
         }
     }
@@ -1135,7 +1135,13 @@ final class LoginViewModel: ObservableObject {
             self.isLoggedIn = true
             let emailIn = UserDefaults.standard.string(forKey: "userEmail")
             let passIn = UserDefaults.standard.string(forKey: "userPass")
-            self.login(email: emailIn!, password: passIn!)
+            self.login(email: emailIn!, password: passIn!) { (success) in
+                if success {
+                    print("Login successful")
+                } else {
+                    print("Login failed")
+                }
+            }
         }
         
     }
@@ -1300,4 +1306,5 @@ final class GlobalFunctions: ObservableObject {
             return hour >= 6 && hour < 18
     }
 }
+
 
