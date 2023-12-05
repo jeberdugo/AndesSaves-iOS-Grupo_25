@@ -34,7 +34,10 @@ final class ContentViewModel: ObservableObject {
     @Published public var storedImage: UIImage?
     
     #if os(iOS)
-    let motionManager = CMMotionManager()
+    lazy var motionManager: CMMotionManager = {
+        let manager = CMMotionManager()
+        return manager
+    }()
     #endif
     
     func clearTextFields() {
@@ -76,7 +79,6 @@ final class ContentViewModel: ObservableObject {
                 let group = DispatchGroup()
                 let timerDuration: TimeInterval = 0.5
                 let dispatchTime = DispatchTime.now() + timerDuration
-                var receivedResponse = false
             
                     group.enter()
                     ref = transactionsCollection.addDocument(data: [
@@ -108,7 +110,6 @@ final class ContentViewModel: ObservableObject {
                                 //self.historyViewModel.saveTransactionsToCache()
                             }
                         } else {
-                            receivedResponse = true
                             group.leave()
                             self.balance = self.balance + Float(amount)
                             self.updateBalance(newBalance: self.balance)
@@ -203,34 +204,34 @@ final class ContentViewModel: ObservableObject {
         }
     }
     
-    func uploadImage(fileName: String, image: UIImage?){
-        
-        if image != nil{
-            
-            let storageRef = Storage.storage().reference()
-            
-            let imageData = image!.jpegData(compressionQuality: 0.8)
-            
-            guard imageData != nil else{
+    func uploadImage(fileName: String, image: UIImage?) {
+        guard let image = image else {
+            print("Image is nil")
             return
         }
+
+        let storageRef = Storage.storage().reference()
         
-        let fileRef = storageRef.child("Transactions/\(fileName).jpg")
-        
-        let uploadTask = fileRef.putData(imageData!, metadata: nil){ metadata, error in
+        if let imageData = image.pngData() {
+            let fileRef = storageRef.child("Transactions/\(fileName).png")
             
-            
-            if error == nil && metadata != nil{
-                
+            let uploadTask = fileRef.putData(imageData, metadata: nil) { metadata, error in
+                if error == nil && metadata != nil {
+                    print("Image uploaded successfully")
+                } else {
+                    print("Error uploading image: \(error?.localizedDescription ?? "Unknown error")")
+                }
             }
             
+            uploadTask.observe(.progress) { snapshot in
+                let percentComplete = 100.0 * Double(snapshot.progress!.completedUnitCount) / Double(snapshot.progress!.totalUnitCount)
+                print("Upload progress: \(percentComplete)%")
+            }
+        } else {
+            print("Failed to convert image to PNG data")
         }
-        }else{
-            print("La imagen es nil")
-        }
-        
     }
-    
+
 }
 
 
@@ -251,12 +252,15 @@ final class HistoryViewModel: ObservableObject {
     @Published public var storedImage: UIImage?
     let currentDateTime = Date()
     
-    // Función para formatear la fecha y hora
+    private let dateFormatter: DateFormatter = {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "MMM d, yyyy, hh:mm a"
+            return formatter
+        }()
+    
     func formatDate(_ date: Date) -> String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMM d, yyyy, hh:mm a"
-        return dateFormatter.string(from: date)
-    }
+            return dateFormatter.string(from: date)
+        }
     
     init() {
         if let transactionsData = UserDefaults.standard.data(forKey: "cachedTransactions") {
@@ -469,11 +473,9 @@ final class HistoryViewModel: ObservableObject {
 
             let timerDuration: TimeInterval = 0.5
             let dispatchTime = DispatchTime.now() + timerDuration
-            var receivedResponse = false
 
             var deletionError: Error?
             transactionDocument.delete { error in
-                receivedResponse = true
                 deletionError = error
             }
 
@@ -514,6 +516,19 @@ final class HistoryViewModel: ObservableObject {
         print("Image Loaded")
     }
 
+    func retrieveImage(fileName: String){
+        let storageRef = Storage.storage().reference()
+        let fileRef = storageRef.child("Transactions/\(fileName).jpg")
+        
+        fileRef.getData(maxSize: 5 * 1024 * 1024){
+            data, error in
+            if error == nil && data != nil{
+
+                self.storedImage = UIImage(data: data!)
+            }
+        }
+    }
+    
     func deleteImageFromDirectory(fileName: String){
         let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let documentsPath = documentsURL.appendingPathComponent("transactions")
@@ -523,22 +538,6 @@ final class HistoryViewModel: ObservableObject {
             try FileManager.default.removeItem(at: imagePath)
         } catch {
             print("Failed to delete: " + error.localizedDescription)
-        }
-    }
-    
-    func retrieveImage(fileName: String){
-        let storageRef = Storage.storage().reference()
-        
-        let fileRef = storageRef.child("Transactions/\(fileName).jpg")
-        
-        fileRef.getData(maxSize: 5 * 1024 * 1024){
-            data, error in
-            
-            if error == nil && data != nil{
-                
-                self.storedImage = UIImage(data: data!)
-            }
-            
         }
     }
     
@@ -889,7 +888,6 @@ final class TagsViewModel: ObservableObject {
                     let group = DispatchGroup()
             let timerDuration: TimeInterval = 0.5
                     let dispatchTime = DispatchTime.now() + timerDuration
-                    var receivedResponse = false
 
                     group.enter()
                     ref = categoriesCollection.addDocument(data: [
@@ -907,7 +905,6 @@ final class TagsViewModel: ObservableObject {
                                 self.savePendingActionsToCache()
                             }
                         } else {
-                            receivedResponse = true
                             group.leave()
                             print("Transaction added with ID: \(ref!.documentID)")
                         }
@@ -992,12 +989,10 @@ final class TagsViewModel: ObservableObject {
             // Set up a timer to trigger after approximately 3 seconds
             let timerDuration: TimeInterval = 0.5
             let dispatchTime = DispatchTime.now() + timerDuration
-            var receivedResponse = false
 
             // Make the Firestore request
             var deletionError: Error?
             categoryDocument.delete { error in
-                receivedResponse = true
                 deletionError = error
             }
 
