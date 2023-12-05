@@ -13,6 +13,7 @@ import FirebaseStorage
 import FirebaseFirestore
 import CoreMotion
 import Network
+import Reachability
 
 final class ContentViewModel: ObservableObject {
     
@@ -243,7 +244,7 @@ final class MainMenuViewModel: ObservableObject {
         MenuItem(title: "Budgets", imageName: "Budgets"),
         MenuItem(title: "Tags", imageName: "Tags"),
         MenuItem(title: "Summary", imageName: "Summary"),
-        MenuItem(title: "Accounts", imageName: "Accounts"),
+        MenuItem(title: "News", imageName: "News"),
         MenuItem(title: "Settings", imageName: "Settings")
     ]
 }
@@ -638,6 +639,9 @@ final class BudgetsViewModel: ObservableObject {
         let type: Int
     }
     
+    
+    
+    
     // Key for caching budgets in UserDefaults
        private let budgetsCacheKey = "BudgetsCache"
 
@@ -666,7 +670,37 @@ final class BudgetsViewModel: ObservableObject {
     }
     
     
+   
     
+    func fetchUserEmailsAndIDs(completion: @escaping ([String: String]?) -> Void) {
+        print("Fetching user emails and document IDs...")
+        
+        let db = Firestore.firestore()
+        let usersCollection = db.collection("users")
+        
+        usersCollection.getDocuments { (snapshot, error) in
+            if let error = error {
+                print("Error fetching user emails and IDs: \(error.localizedDescription)")
+                completion(nil)
+                return
+            }
+            
+            var IDsAndEmails: [String: String] = [:]
+            
+            if let snapshot = snapshot {
+                for document in snapshot.documents {
+                    if let email = document.data()["email"] as? String {
+                        if let documentID = document.data()["userId"] as? String {
+                            IDsAndEmails[documentID] = email
+                        }
+                    }
+                }
+            }
+            
+            print("Fetched emails and IDs:", IDsAndEmails)
+            completion(IDsAndEmails)
+        }
+    }
     
     
     
@@ -703,6 +737,81 @@ final class BudgetsViewModel: ObservableObject {
         }
     }
     
+    
+    func createSharedBudget(name: String, total: Float, date: Date, type: Int, userIDs: Set<String>) {
+        let user = Auth.auth().currentUser
+        
+        
+        if let user = user {
+            let db = Firestore.firestore()
+            let sharedBudgetsCollection = db.collection("sharedBudgets")
+            var usersWithMe=userIDs
+            usersWithMe.insert(String(user.uid))
+            
+            var ref: DocumentReference? = nil
+            ref = sharedBudgetsCollection.addDocument(data: [
+                "name": name,
+                "total": total,
+                "contributions": 0,
+                "date": date,
+                "type": type,
+                "users": Array(usersWithMe), // Convert Set to Array for Firestore compatibility
+                "usersPending": Array(userIDs)
+            ]) { error in
+                if let error = error {
+                    print("Error creating shared budget: \(error.localizedDescription)")
+                } else {
+                    print("Shared budget created with ID: \(ref!.documentID)")
+                    // Additional actions upon successful creation
+                }
+                
+                // Update the cached budget data
+                let newSharedBudget = Budget(documentID: nil, name: name, total: total, contributions: 0, user: user.uid, date: date, type: type)
+                self.budgets.append(newSharedBudget)
+                self.updateCachedBudgets()
+            }
+        }
+    }
+    
+    func updateSharedBudgetUsersPending( documentID:String) {
+        let userToRemove=Auth.auth().currentUser?.uid
+        let db = Firestore.firestore()
+        let sharedBudgetsCollection = db.collection("sharedBudgets")
+        
+        let documentRef = sharedBudgetsCollection.document(documentID)
+        
+        documentRef.updateData([
+            "usersPending": FieldValue.arrayRemove([userToRemove])
+        ]) { error in
+            if let error = error {
+                print("Error updating usersPending: \(error.localizedDescription)")
+            } else {
+                print("User ID removed from usersPending successfully.")
+                // Additional actions upon successful update
+            }
+        }
+    }
+    
+    func deleteInvitation( documentID:String) {
+        let userToRemove=Auth.auth().currentUser?.uid
+        let db = Firestore.firestore()
+        let sharedBudgetsCollection = db.collection("sharedBudgets")
+        
+        let documentRef = sharedBudgetsCollection.document(documentID)
+        
+        documentRef.updateData([
+            "users": FieldValue.arrayRemove([userToRemove])
+        ]) { error in
+            if let error = error {
+                print("Error updating usersPending: \(error.localizedDescription)")
+            } else {
+                print("User ID removed from users successfully.")
+                // Additional actions upon successful update
+            }
+        }
+    }
+
+    
    
     
     func fetchBudgets(completion: @escaping ([Budget]?) -> Void) {        // Check if cached budgets are available
@@ -716,6 +825,8 @@ final class BudgetsViewModel: ObservableObject {
         if let user = user {
             let db = Firestore.firestore()
             let budgetsCollection = db.collection("users").document(user.uid).collection("budgets")
+
+            var budgets: [Budget] = []
             
             // Fetch all budget documents from Firestore
             budgetsCollection.getDocuments { (snapshot, error) in
@@ -724,14 +835,69 @@ final class BudgetsViewModel: ObservableObject {
                     completion(nil)
                     return
                 }
+    
+                    if let snapshot = snapshot {
+                        for document in snapshot.documents {
+                            
+                            let data = document.data()
+                            
+                            // Access the document ID for each document
+                            let documentID = document.documentID
+                            print("Document ID: \(documentID)")
+                            
+                            if let name = data["name"] as? String,
+                               let total = data["total"] as? Float,
+                               let dateTimestamp = data["date"] as? Timestamp,
+                               let type = data["type"] as? Int {
+                                
+                                // Convert the Timestamp to a Date
+                                let date = dateTimestamp.dateValue()
+                                
+                                // Calculate the amount (assuming you have the amount stored as a separate field in Firestore)
+                                let contributions = data["contributions"] as? Float
+                                
+                                // Create a Budget instance
+                                let budget = Budget(documentID: document.documentID, name: name, total: total, contributions: contributions ?? 0, user: user.uid, date: date, type: type)
+                                budgets.append(budget)
+                                
+                                // Print the data for debugging
+                                print("Fetched Budget: \(budget)")
+                            }
+                        }
+                    }
+                    
+                print("Fetch Budgets\(budgets)")
+                self.budgets = budgets
+                self.updateCachedBudgets()
+                completion(budgets)
+            }
+
+        }
+    }
+    
+    func fetchSharedBudgets(completion: @escaping ([Budget]?) -> Void) {
+        guard let user = Auth.auth().currentUser else {
+            completion(nil)
+            return
+        }
+
+        let db = Firestore.firestore()
+        let sharedBudgetsCollection = db.collection("sharedBudgets")
+        
+        // Fetch shared budgets where the current user is in users but not in usersPending
+        sharedBudgetsCollection.whereField("users", arrayContains: user.uid)
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    print("Error fetching shared budgets: \(error.localizedDescription)")
+                    completion(nil)
+                    return
+                }
                 
                 var budgets: [Budget] = []
                 
                 if let snapshot = snapshot {
                     for document in snapshot.documents {
-                        
                         let data = document.data()
-                        
                         // Access the document ID for each document
                         let documentID = document.documentID
                         print("Document ID: \(documentID)")
@@ -739,7 +905,8 @@ final class BudgetsViewModel: ObservableObject {
                         if let name = data["name"] as? String,
                            let total = data["total"] as? Float,
                            let dateTimestamp = data["date"] as? Timestamp,
-                           let type = data["type"] as? Int {
+                           let type = data["type"] as? Int
+                        {
                             
                             // Convert the Timestamp to a Date
                             let date = dateTimestamp.dateValue()
@@ -747,23 +914,80 @@ final class BudgetsViewModel: ObservableObject {
                             // Calculate the amount (assuming you have the amount stored as a separate field in Firestore)
                             let contributions = data["contributions"] as? Float
                             
-                            // Create a Budget instance
-                            let budget = Budget(documentID: document.documentID, name: name, total: total, contributions: contributions ?? 0, user: user.uid, date: date, type: type)
-                            budgets.append(budget)
                             
-                            // Print the data for debugging
-                            print("Fetched Budget: \(budget)")
+                            if let usersPending = data["usersPending"] as? [String], !usersPending.contains(user.uid) {
+                                let sharedBudget = Budget(documentID: document.documentID, name: name, total: total, contributions: contributions ?? 0, user: user.uid, date: date, type: type)
+                                budgets.append(sharedBudget)
+                                print("Fetched Shared Budget: \(sharedBudget)")
+                            }
                         }
                     }
                 }
-                
+                    
                 self.budgets = budgets
                 self.updateCachedBudgets()
-
                 completion(budgets)
             }
-        }
     }
+    
+    func fetchInvitationsSharedBudgets(completion: @escaping ([Budget]?) -> Void) {
+        guard let user = Auth.auth().currentUser else {
+            completion(nil)
+            return
+        }
+
+        let db = Firestore.firestore()
+        let sharedBudgetsCollection = db.collection("sharedBudgets")
+        
+        // Fetch shared budgets where the current user is in users but not in usersPending
+        sharedBudgetsCollection.whereField("usersPending", arrayContains: user.uid)
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    print("Error fetching shared budgets: \(error.localizedDescription)")
+                    completion(nil)
+                    return
+                }
+                
+                var budgets: [Budget] = []
+                
+                if let snapshot = snapshot {
+                    for document in snapshot.documents {
+                        let data = document.data()
+                        // Access the document ID for each document
+                        let documentID = document.documentID
+                        print("Document ID: \(documentID)")
+                        
+                        if let name = data["name"] as? String,
+                           let total = data["total"] as? Float,
+                           let dateTimestamp = data["date"] as? Timestamp,
+                           let type = data["type"] as? Int
+                        {
+                            
+                            // Convert the Timestamp to a Date
+                            let date = dateTimestamp.dateValue()
+                            
+                            // Calculate the amount (assuming you have the amount stored as a separate field in Firestore)
+                            let contributions = data["contributions"] as? Float
+                            
+                            
+                            if let usersPending = data["users"] as? [String], usersPending.contains(user.uid) {
+                                let sharedBudget = Budget(documentID: document.documentID, name: name, total: total, contributions: contributions ?? 0, user: user.uid, date: date, type: type)
+                                budgets.append(sharedBudget)
+                                print("Fetched Invitations: \(sharedBudget)")
+                            }
+                        }
+                    }
+                }
+                    
+            self.budgets = budgets
+            self.updateCachedBudgets()
+            completion(budgets)
+            }
+    }
+    
+
+    
+    
     
     
     func updateContributions(newContributions: Float, documentID: String, currentContributions: Float, completion: @escaping (Bool) -> Void) {
@@ -801,11 +1025,47 @@ final class BudgetsViewModel: ObservableObject {
         }
     }
     
-
     
+    func updateContributionsShared(newContributions: Float, documentID: String, currentContributions: Float, completion: @escaping (Bool) -> Void) {
+
+            let db = Firestore.firestore()
+            let budgetsCollection = db.collection("sharedBudgets")
+            
+            // Get the document reference for the specific budget using its document ID
+            let documentRef = budgetsCollection.document(documentID)
+        
+            
+            // Update the contributions field
+            documentRef.updateData([
+                "contributions": newContributions + currentContributions
+            ]) { error in
+                if let error = error {
+                    print("Error updating contributions for budget: \(error.localizedDescription)")
+                    completion(false)
+                } else {
+                    print("Contributions updated for budget: \(documentID)")
+                    
+                    // Calculate the updated contributions value
+                    let updatedContributions = newContributions + currentContributions
+                    
+                    // Update the cached budget data
+                    if let index = self.budgets.firstIndex(where: { $0.documentID == documentID }) {
+                        self.budgets[index].contributions = updatedContributions
+                        self.updateCachedBudgets()
+                    }
+                    
+                    // Pass the updated contributions value to the completion handler
+                    completion(true)
+                }
+            }
+        }
     
     
 }
+
+
+
+
 
 final class TagsViewModel: ObservableObject {
         @Published var tagsItems: [TagsItem] = [
@@ -1187,6 +1447,7 @@ final class SettingsViewModel: ObservableObject {
     @Published public var isLoggingOut = false
     @Published public var isDeletingAccount = false
     @Published public var isAlertShowing = false
+    
     @AppStorage("notificationsEnabled") var notificationsEnabled = false
     
     @Published public var balance: Float = 0
@@ -1298,7 +1559,161 @@ final class SettingsViewModel: ObservableObject {
             }
         }
     }
+    
+    
 
+    func addSuggestion(text: String, completion: @escaping (Bool) -> Void) {
+        let user = Auth.auth().currentUser
+
+        if let user = user {
+            let db = Firestore.firestore()
+            let suggestionsCollection = db.collection("users").document(user.uid).collection("suggestions")
+
+            let reachability = try! Reachability()
+
+            if reachability.connection == .unavailable {
+                // No internet connection
+                completion(false)
+                print("No internet connection.")
+                return
+            }
+
+            suggestionsCollection.addDocument(data: ["text": text]) { error in
+                DispatchQueue.main.async {
+                    if let error = error {
+                        // Handle other errors
+                        completion(false)
+                        print("An error has occurred: \(error)")
+                    } else {
+                        // Operation successful
+                        print("Suggestion added successfully!")
+                        completion(true)
+                    }
+                }
+            }
+        }
+    }
+
+
+    
+    @Published var numSuggestions: Int = 0
+    
+    func countUserSuggestions() {
+        // Attempt to load numSuggestions from cache
+        if let cachedNumSuggestions = UserDefaults.standard.value(forKey: "cachedNumSuggestions") as? Int {
+            self.numSuggestions = cachedNumSuggestions
+        }
+
+        let user = Auth.auth().currentUser
+
+        if let user = user {
+            let db = Firestore.firestore()
+            let suggestionsCollection = db.collection("users").document(user.uid).collection("suggestions")
+
+            suggestionsCollection.getDocuments { (snapshot, error) in
+                guard error == nil else {
+                    // Handle errors here, and use cached value if available
+                    print("An error has occurred: \(error!)")
+                    return
+                }
+
+                if let snapshot = snapshot {
+                    self.numSuggestions = snapshot.documents.count
+
+                    // Save numSuggestions to cache
+                    UserDefaults.standard.set(self.numSuggestions, forKey: "cachedNumSuggestions")
+                }
+            }
+        } else {
+            print("An error has occurred")
+        }
+    }
+
+
+}
+
+final class NewsViewModel: ObservableObject {
+    @Published var news: [News] = [
+        News(headline: "Breaking News 1", author: "John Doe", date: "Nov 1, 2023", content: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.", image: "news1"),
+        News(headline: "Important Update", author: "Jane Smith", date: "Nov 2, 2023", content: "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.", image: "news2"),
+        // Add more news items as needed
+    ]
+    
+    @Published var newsWithId = [NewWithId]()
+    
+    func fetchNews() {
+            // Load news data from cache (if available)
+            if let cachedNewsData = UserDefaults.standard.data(forKey: "cachedNewsData") {
+                if let decodedNewsData = try? JSONDecoder().decode([NewWithId].self, from: cachedNewsData) {
+                    self.newsWithId = decodedNewsData
+                }
+            }
+
+            // Fetch news data from Firebase
+            if let user = Auth.auth().currentUser {
+                let db = Firestore.firestore()
+                let newsCollection = db.collection("News")
+
+                let group = DispatchGroup()
+                var receivedResponse = false
+
+                group.enter()
+
+                newsCollection.getDocuments { (snapshot, error) in
+                    guard error == nil else {
+                        // Handle errors here
+                        DispatchQueue.global().asyncAfter(deadline: .now() + 0.5) {
+                            self.useCachedNewsData()
+                        }
+                        group.leave()
+                        return
+                    }
+
+                    if let snapshot = snapshot {
+                        var newsData = [NewWithId]()
+
+                        for document in snapshot.documents {
+                            let data = document.data()
+                            let id = document.documentID
+                            let headline = data["headline"] as? String ?? ""
+                            let author = data["author"] as? String ?? ""
+                            let date = data["date"] as? String ?? ""
+                            let content = data["content"] as? String ?? ""
+                            let image = data["image"] as? String ?? ""
+
+                            let news = NewWithId(newId: id, headline: headline, author: author, date: date, content: content, image: image)
+                            newsData.append(news)
+                        }
+
+                        self.newsWithId = newsData
+
+                        // Save to cache
+                        if let newsData = try? JSONEncoder().encode(newsData) {
+                            UserDefaults.standard.set(newsData, forKey: "cachedNewsData")
+                        }
+
+                        receivedResponse = true
+                        group.leave()
+                    }
+                }
+
+                // Use cached news data if no response within 0.5 seconds
+                DispatchQueue.global().asyncAfter(deadline: .now() + 0.5) {
+                    if !receivedResponse {
+                        self.useCachedNewsData()
+                    }
+                }
+            }
+        }
+
+        // Function to use cached news data
+        func useCachedNewsData() {
+            if let cachedNewsData = UserDefaults.standard.data(forKey: "cachedNewsData") {
+                if let decodedNewsData = try? JSONDecoder().decode([NewWithId].self, from: cachedNewsData) {
+                    self.newsWithId = decodedNewsData
+                }
+            }
+        }
 }
 
 

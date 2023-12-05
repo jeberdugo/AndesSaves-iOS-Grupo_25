@@ -13,8 +13,10 @@ import FirebaseFirestore
 // Vista para "Budgets"
 struct BudgetsView: View {
     @State private var dataArray: [Budget] = []
+    @State private var invitations: [Budget] = []
     //@State private var dataArray: [BudgetsViewModel.Budget] = []
     @State private var isAddBudgetViewPresented = false
+    @State private var  isNotificationViewPresented=false
     @StateObject private var functions = GlobalFunctions()
     @StateObject private var viewModel = BudgetsViewModel()
     
@@ -27,10 +29,27 @@ struct BudgetsView: View {
     }
     
     func fetchBudgetData() {
-        viewModel.fetchBudgets { viewModelBudgets in
+        
+        viewModel.fetchBudgets { regularBudgets in
+            if let regularBudgets = regularBudgets {
+                dataArray += convertViewModelBudgets(regularBudgets)
+            }
+        }
+        viewModel.fetchSharedBudgets { viewModelBudgets in
             if let viewModelBudgets = viewModelBudgets {
                 dataArray = convertViewModelBudgets(viewModelBudgets)
                 //dataArray = viewModelBudgets
+                //print("Dataview:\(dataArray)")
+            }
+        }
+    }
+    
+    func fetchInvitationsSharedBudgets() {
+
+        viewModel.fetchInvitationsSharedBudgets { viewModelBudgets in
+            if let viewModelBudgets = viewModelBudgets {
+                invitations = convertViewModelBudgets(viewModelBudgets)
+
             }
         }
     }
@@ -55,6 +74,9 @@ struct BudgetsView: View {
                 HStack(spacing: 30) {
                     
                     NavigationLink(destination: AddBudgetView(), isActive: $isAddBudgetViewPresented) {
+                        EmptyView()
+                    }
+                    NavigationLink(destination: NotificationView(invitations:$invitations), isActive: $isNotificationViewPresented) {
                         EmptyView()
                     }
                     
@@ -87,6 +109,23 @@ struct BudgetsView: View {
                     .onTapGesture {
                         // Remove action logic here
                     }
+                    Button(action: {
+                        // Invitation button action logic here
+                        isNotificationViewPresented.toggle()
+                        fetchInvitationsSharedBudgets()
+                    }) {
+                        VStack {
+                            Image(systemName: "person.badge.plus")
+                                .resizable()
+                                .frame(width: 40, height: 40)
+                                .foregroundColor(.orange)
+                                .background(Color.white.opacity(0.2))
+                                .cornerRadius(5)
+                            Text("Invitations")
+                                .foregroundColor(functions.isDaytime ? Color.blue : Color.white)
+                        }
+                    }
+      
                 }
                 .padding(.horizontal)
                 
@@ -105,9 +144,7 @@ struct BudgetsView: View {
                         
                         
                 }
-                
-            
-            
+
             
             // Section: Group
             Text("Group")
@@ -203,6 +240,24 @@ struct ItemRow: View {
       @State private var contributions: [Double] = []
       @StateObject private var functions = GlobalFunctions()
       
+      
+      @State private var showNameList = false
+      @State private var userIDsAndEmails: [String: String] = [:]
+      
+      @Environment(\.presentationMode) var presentationMode
+
+      private func fetchUserEmailsAndIDs() {
+          viewModel.fetchUserEmailsAndIDs { emailsAndIDs in
+              if let emailsAndIDs = emailsAndIDs {
+                  // Store the fetched emails and IDs in a dictionary
+                  userIDsAndEmails = emailsAndIDs
+              } else {
+                  // Handle error fetching emails and IDs from Firestore
+              }
+          }
+      }
+
+      
       private static let formatter: NumberFormatter = {
               let formatter = NumberFormatter()
               formatter.numberStyle = .decimal
@@ -268,29 +323,23 @@ struct ItemRow: View {
               .padding(.horizontal)
               
               if selectedType == 1 {
-                  Text("Members")
-                      .font(.headline)
-                      .frame(maxWidth: .infinity, alignment: .leading)
-                      .offset(x: 20)
-                      .foregroundColor(functions.isDaytime ? Color.black : Color.white)
-                  
-                  TextField("Enter member name", text: $memberName)
-                      .textFieldStyle(RoundedBorderTextFieldStyle())
-                      .padding(.horizontal)
-                  
-                  Button(action: {
-                      groupMembers.append(memberName)
-                      memberName = ""
-                  }) {
-                      Text("Add Member")
-                          .foregroundColor(.green)
-                  }
+                  NavigationLink(destination: NameListView(userIDsAndEmails: $userIDsAndEmails,
+                                                           budgetName: $budgetName,
+                                                           budgetAmount: $budgetAmount,
+                                                           budgetDate: $budgetDate)
+                                 , isActive: $showNameList) {
+                                  Text("Add Group Members")
+                              }
+                  .onAppear {
+                      fetchUserEmailsAndIDs()
+                          }
               }
               
               Button(action: {
                   viewModel.createBudget(name: budgetName, total: Float(budgetAmount), date: budgetDate, type: selectedType)
                   budgetName=""
                   budgetAmount=0
+                  presentationMode.wrappedValue.dismiss()
                   
                   
               }) {
@@ -299,7 +348,10 @@ struct ItemRow: View {
                       .padding()
                       .background(Color.green)
                       .cornerRadius(10)
-              }.padding()
+              }
+              .padding()
+              .opacity(selectedType == 0 ? 1.0 : 0.0)
+              .disabled(selectedType != 0)
           }
               Spacer()
           }
@@ -398,16 +450,24 @@ struct BudgetItemDetailView: View {
                 
                 
                 Button(action: {
-                    viewModel.updateContributions(newContributions: Float(newContribution), documentID: budget.documentID ?? "", currentContributions: budget.contributions ) { success in
-                        if success {
-                            // Handle success
-                            newContribution=0
-                            presentationMode.wrappedValue.dismiss()
-                            
-                        } else {
-                            // Handle failure
+                    if budget.type == 0 {
+                        viewModel.updateContributions(newContributions: Float(newContribution), documentID: budget.documentID ?? "", currentContributions: budget.contributions ) { success in
+                            if success {
+                                // Handle success
+                                newContribution = 0
+                                presentationMode.wrappedValue.dismiss()
+                            }
                         }
+                    } else {
+                        viewModel.updateContributionsShared(newContributions: Float(newContribution), documentID: budget.documentID ?? "", currentContributions: budget.contributions ){ success in
+                            if success {
+                                // Handle success
+                                newContribution = 0
+                                presentationMode.wrappedValue.dismiss()
+                            }}
+                        
                     }
+                    
                 }) {
                     Text("Add Contribution")
                         .foregroundColor(.green)
@@ -431,4 +491,199 @@ struct BudgetItemDetailView: View {
     }
 }
 
+
+
+struct NameListView: View {
+    @Binding var userIDsAndEmails: [String: String] // Dictionary containing user IDs and emails
+    @Binding var budgetName: String
+    @Binding var budgetAmount: Int
+    @Binding var budgetDate: Date
+    @State private var selectedType: Int = 1
+    @State private var searchText: String = ""
+    @State private var isSearching: Bool = false
+    @State private var checkedItems: Set<String> = []
+    @State private var checkedItemsUserIds: Set<String> = []
+    @ObservedObject var viewModel = BudgetsViewModel()
+    @Environment(\.presentationMode) var presentationMode
+    
+
+    var body: some View {
+        NavigationView {
+
+            VStack {
+                ZStack() {
+                    Color(red: 21/255, green: 191/255, blue: 129/255).edgesIgnoringSafeArea(.all)
+                    VStack {
+                        Text("Group Members")
+                            .font(.title)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                    }
+                }.frame(maxWidth: 400, maxHeight: 60)
+                
+                SearchBar(text: $searchText, isSearching: $isSearching)
+
+                List {
+                    ForEach(userIDsAndEmails.filter { key, value in
+                        searchText.isEmpty ? true : value.localizedCaseInsensitiveContains(searchText)
+                    }, id: \.key) { key, value in
+                        HStack {
+                            Text(value) // Display email
+                            Spacer()
+                            Image(systemName: checkedItems.contains(value) ? "checkmark.circle.fill" : "circle")
+                                .foregroundColor(checkedItems.contains(value) ? .blue : .gray)
+                        }
+                        .onTapGesture {
+                            toggleCheck(for: value)
+                        }
+                    }
+                }
+               // .navigationBarTitle("Group Members")
+         
+
+                Button(action: {
+                    addCheckedNames()
+                    viewModel.createSharedBudget(
+                        name: budgetName,
+                        total: Float(budgetAmount),
+                        date: budgetDate,
+                        type: selectedType,
+                        userIDs: checkedItemsUserIds)
+                    dismissToFirstView()
+                    
+                }) {
+                    Text("Add Group Budget")
+                        .foregroundColor(.white)
+                        .padding()
+                        .background(Color.green)
+                        .cornerRadius(10)
+                }
+                
+                .padding()
+
+            }
+        }
+    }
+
+    func toggleCheck(for email: String) {
+        if checkedItems.contains(email) {
+            checkedItems.remove(email)
+        } else {
+            checkedItems.insert(email)
+        }
+    }
+
+    func addCheckedNames() {
+        for email in checkedItems {
+            if let userID = userIDsAndEmails.first(where: { $0.value == email })?.key {
+                print("Selected: Email: \(email), UserID: \(userID)")
+                // Further actions with selected email and userID
+                checkedItemsUserIds.insert(userID)
+            }
+        }
+    }
+    
+    func dismissToFirstView() {
+        presentationMode.wrappedValue.dismiss() // Dismiss the third view
+        presentationMode.wrappedValue.dismiss() // Dismiss the second view
+    }
+    
+}
+
+
+struct SearchBar: View {
+    @Binding var text: String
+    @Binding var isSearching: Bool
+
+    var body: some View {
+        HStack {
+            TextField("Search", text: $text)
+                .padding(.leading, 24)
+                .onChange(of: text) { _ in
+                    isSearching = !text.isEmpty
+                }
+
+            Image(systemName: "magnifyingglass")
+                .foregroundColor(.gray)
+                .padding(.horizontal)
+                .onTapGesture {
+                    isSearching = true
+                }
+
+            if isSearching {
+                Button(action: {
+                    text = ""
+                    isSearching = false
+                }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.gray)
+                }
+                .padding(.trailing)
+            }
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 10)
+    }
+}
+
+
+
+struct NotificationView: View {
+    @Binding var invitations: [Budget]
+    @ObservedObject var viewModel = BudgetsViewModel()
+    @State private var hiddenIndices: Set<Int> = []
+
+    var body: some View {
+        VStack {
+            
+            ZStack() {
+                Color(red: 21/255, green: 191/255, blue: 129/255).edgesIgnoringSafeArea(.all)
+                VStack {
+                    Text("Invitations for Group Budgets")
+                        .font(.title)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                }
+            }.frame(maxWidth: 400, maxHeight: 60)
+
+            List {
+                ForEach(invitations.indices, id: \.self) { index in
+                    if !hiddenIndices.contains(index) {
+                        let invitation = invitations[index]
+                        HStack {
+                            Text(invitation.name)
+                            
+                            Spacer()
+                            
+                            HStack(spacing: 20) {
+                                Image(systemName: "checkmark.circle")
+                                    .resizable()
+                                    .frame(width: 30, height: 30)
+                                    .foregroundColor(.green)
+                                    .onTapGesture {
+                                        viewModel.updateSharedBudgetUsersPending(documentID: invitation.documentID ?? "")
+                                        hideInvitation(at: index)
+                                    }
+                                
+                                Image(systemName: "x.circle")
+                                    .resizable()
+                                    .frame(width: 30, height: 30)
+                                    .foregroundColor(.red)
+                                    .onTapGesture {
+                                        viewModel.deleteInvitation(documentID: invitation.documentID ?? "")
+                                        hideInvitation(at: index)
+                                    }
+                            }
+                        }
+                        .padding()
+                    }
+                }
+            }
+        }
+    }
+
+    func hideInvitation(at index: Int) {
+        hiddenIndices.insert(index)
+    }
+}
 

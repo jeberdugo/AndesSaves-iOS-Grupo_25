@@ -11,6 +11,7 @@ import Charts
 // Vista para "Summary"
     struct SummaryView: View {
         @StateObject private var History = HistoryViewModel()
+        @StateObject private var Settings = SettingsViewModel()
         @StateObject private var functions = GlobalFunctions()
         
         var body: some View {
@@ -112,12 +113,23 @@ import Charts
                                 
                             }
                                             }
+                        Section(header: Text("Suggestions")){
+                            HStack {
+                                Text("Suggestions Sent" )
+                                    .font(.headline)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.black)
+                                Spacer()
+                                Text(String(Settings.numSuggestions))
+                            }
+                        }
                     }
                 }
                 
             }
             .onAppear(){
                 History.listTransactions()
+                Settings.countUserSuggestions()
             }
             .background(functions.isDaytime ? Color.white : Color(red: 23/255, green: 24/255, blue: 25/255))
         }
