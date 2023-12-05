@@ -7,6 +7,8 @@
 
 import SwiftUI
 import FirebaseCore
+import GoogleMobileAds
+import UIKit
 
 @main
 struct Prueba_de_conceptoApp: App {
@@ -59,11 +61,13 @@ struct Prueba_de_conceptoApp: App {
     }
 }
 
+
 class AppDelegate: UIResponder, UIApplicationDelegate {
     var orientationLock = UIInterfaceOrientationMask.all
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         FirebaseApp.configure()
+        GADMobileAds.sharedInstance().start(completionHandler: nil)
         return true
     }
     
@@ -71,7 +75,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return orientationLock
     }
     
-
+    
 
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {

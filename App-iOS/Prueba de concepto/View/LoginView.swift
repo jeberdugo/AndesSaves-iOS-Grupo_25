@@ -37,8 +37,8 @@ struct LoginView: View {
                         .padding(.horizontal, 10) // Adjust the horizontal padding as needed
                         .autocapitalization(.none)
                         .onChange(of: email) { newValue in
-                        if newValue.count > 30 {
-                            email = String(newValue.prefix(30))
+                        if newValue.count > 20 {
+                            email = String(newValue.prefix(20))
                         }
                     }
                 }
@@ -56,8 +56,8 @@ struct LoginView: View {
                         .textFieldStyle(PlainTextFieldStyle()) // Use PlainTextFieldStyle to remove the default border
                         .padding(.horizontal, 10) // Adjust the horizontal padding as needed
                         .onChange(of: password) { newValue in
-                        if newValue.count > 30 {
-                            password = String(newValue.prefix(30))
+                        if newValue.count > 20 {
+                            password = String(newValue.prefix(20))
                         }
                     }
                 }

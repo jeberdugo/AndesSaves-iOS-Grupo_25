@@ -233,6 +233,10 @@ final class ContentViewModel: ObservableObject {
 }
 
 
+
+
+
+
 final class MainMenuViewModel: ObservableObject {
     @Published var menuItems: [MenuItem] = [
         MenuItem(title: "History", imageName: "History"),

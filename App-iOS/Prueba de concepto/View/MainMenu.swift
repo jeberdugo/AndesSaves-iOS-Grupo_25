@@ -57,8 +57,7 @@ struct MainMenu: View {
                         }
                         Spacer(minLength: 30)
                             .padding()
-                        
-                        
+                        Banner(bannerID: "ca-app-pub-6315386873677510/7187325499", width: UIScreen.main.bounds.width)
                     }
                 }
                 .edgesIgnoringSafeArea(/*@START_MENU_TOKEN@*/.all/*@END_MENU_TOKEN@*/)
