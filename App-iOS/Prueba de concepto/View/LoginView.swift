@@ -12,8 +12,6 @@ struct LoginView: View {
     @StateObject private var settingsView = SettingsViewModel()
     @StateObject private var Contentview = ContentViewModel()
     
-    
-
     var body: some View {
         NavigationView {
             VStack{
@@ -39,8 +37,8 @@ struct LoginView: View {
                         .padding(.horizontal, 10) // Adjust the horizontal padding as needed
                         .autocapitalization(.none)
                         .onChange(of: email) { newValue in
-                        if newValue.count > 30 {
-                            email = String(newValue.prefix(30))
+                        if newValue.count > 20 {
+                            email = String(newValue.prefix(20))
                         }
                     }
                 }
@@ -58,8 +56,8 @@ struct LoginView: View {
                         .textFieldStyle(PlainTextFieldStyle()) // Use PlainTextFieldStyle to remove the default border
                         .padding(.horizontal, 10) // Adjust the horizontal padding as needed
                         .onChange(of: password) { newValue in
-                        if newValue.count > 30 {
-                            password = String(newValue.prefix(30))
+                        if newValue.count > 20 {
+                            password = String(newValue.prefix(20))
                         }
                     }
                 }
@@ -69,10 +67,11 @@ struct LoginView: View {
                 
                 
                 Button(action: {
-                    viewModel.login(email: self.email, password: self.password)
-                    if viewModel.isLoggedIn {
-                            self.showNextView = true
-                        }
+                    viewModel.login(email: self.email, password: self.password){ success in
+                                            if success {
+                                                self.showNextView = true
+                                            }
+                                        }
                     
                 }) {
                     Text("Login")
