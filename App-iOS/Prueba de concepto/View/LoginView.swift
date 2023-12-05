@@ -40,6 +40,9 @@ struct LoginView: View {
                         if newValue.count > 20 {
                             email = String(newValue.prefix(20))
                         }
+                            if newValue.trimmingCharacters(in: .whitespaces).isEmpty {
+                                     email = ""
+                                                        }
                     }
                 }
                 .padding()
@@ -59,6 +62,9 @@ struct LoginView: View {
                         if newValue.count > 20 {
                             password = String(newValue.prefix(20))
                         }
+                            if newValue.trimmingCharacters(in: .whitespaces).isEmpty {
+                                                password = ""
+                                                                                             }
                     }
                 }
                 .padding()

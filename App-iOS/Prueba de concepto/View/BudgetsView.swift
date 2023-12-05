@@ -261,6 +261,8 @@ struct ItemRow: View {
       private static let formatter: NumberFormatter = {
               let formatter = NumberFormatter()
               formatter.numberStyle = .decimal
+          formatter.maximumFractionDigits = 0
+          formatter.maximumIntegerDigits = 20
               return formatter
           }()
       
@@ -286,7 +288,14 @@ struct ItemRow: View {
               TextField("Enter name", text: $budgetName)
                   .textFieldStyle(RoundedBorderTextFieldStyle())
                   .padding(.horizontal)
-              
+                  .onChange(of: budgetName) { newValue in
+                                              if newValue.count > 30 {
+                                                  budgetName = String(newValue.prefix(30))
+                                              }
+                      if newValue.trimmingCharacters(in: .whitespaces).isEmpty {
+                                                      budgetName = ""
+                                                                 }
+                                          }
               Text("Amount")
                   .font(.headline)
                   .frame(maxWidth: .infinity, alignment: .leading)
@@ -296,6 +305,7 @@ struct ItemRow: View {
               TextField("Enter amount", value: $budgetAmount, formatter: Self.formatter).keyboardType(.numberPad)
                                 .textFieldStyle(RoundedBorderTextFieldStyle())
                                 .padding(.horizontal)
+              
               
               Text("Date")
                   .font(.headline)

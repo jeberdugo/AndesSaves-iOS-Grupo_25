@@ -149,7 +149,14 @@ struct AddTagDialog: View {
             
             TextField("Tag name", text: $tagName)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding()
+                .padding() .onChange(of: tagName) { newValue in
+                    if newValue.count > 30 {
+                        tagName = String(newValue.prefix(30))
+                    }
+                    if newValue.trimmingCharacters(in: .whitespaces).isEmpty {
+                                                                          budgetName = ""
+                                                                                     }
+                }
             
             HStack {
                 Button(action: {
