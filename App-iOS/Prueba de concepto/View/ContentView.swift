@@ -168,7 +168,7 @@ struct AddTransactionView: View {
                 Color(hex: "12CD8A").edgesIgnoringSafeArea(.all)
             }
             VStack {
-                Text("History")
+                Text("Add Transaction")
                     .font(.title)
                     .fontWeight(.bold)
                     .foregroundColor(.white)
@@ -187,6 +187,9 @@ struct AddTransactionView: View {
                         if newValue.count > 30 {
                             viewModel.transactionName = String(newValue.prefix(30))
                             }
+                            if newValue.trimmingCharacters(in: .whitespaces).isEmpty {
+                                                                                        viewModel.transactionName = ""
+                                                                                                   }
                         }
                     TextField("Amount", text: $viewModel.transactionAmount)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -195,13 +198,18 @@ struct AddTransactionView: View {
                             if newValue.count > 24 {
                                 viewModel.transactionAmount = String(newValue.prefix(10))
                             }
+                            if newValue.trimmingCharacters(in: .whitespaces).isEmpty {
+                                                            viewModel.transactionAmount = ""
+                                                                       }
                         }
                     TextField("Source", text: $viewModel.transactionSource)
                         .onChange(of: viewModel.transactionSource) { newValue in
                             if newValue.count > 30 {
                                 viewModel.transactionSource = String(newValue.prefix(30))
                             }
-                        }
+                            if newValue.trimmingCharacters(in: .whitespaces).isEmpty {
+                                viewModel.transactionSource = ""
+                                           }                        }
                 }
                 
                 Section(header: Text("Type")) {

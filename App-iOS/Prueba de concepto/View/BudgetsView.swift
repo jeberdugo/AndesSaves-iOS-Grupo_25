@@ -292,6 +292,9 @@ struct ItemRow: View {
                                               if newValue.count > 30 {
                                                   budgetName = String(newValue.prefix(30))
                                               }
+                      if newValue.trimmingCharacters(in: .whitespaces).isEmpty {
+                                                      budgetName = ""
+                                                                 }
                                           }
               Text("Amount")
                   .font(.headline)

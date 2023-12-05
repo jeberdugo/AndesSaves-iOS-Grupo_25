@@ -153,6 +153,9 @@ struct AddTagDialog: View {
                     if newValue.count > 30 {
                         tagName = String(newValue.prefix(30))
                     }
+                    if newValue.trimmingCharacters(in: .whitespaces).isEmpty {
+                                                                          budgetName = ""
+                                                                                     }
                 }
             
             HStack {
