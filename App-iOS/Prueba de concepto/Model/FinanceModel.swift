@@ -125,3 +125,21 @@ struct Prediction: Hashable {
     var month: Int
     var year: Int
 }
+
+struct News: Identifiable {
+    let id = UUID()
+    let headline: String
+    let author: String
+    let date: String
+    let content: String
+    let image: String
+}
+
+struct NewWithId: Codable {
+    var newId: String
+    var headline: String
+    var author: String
+    var date: String
+    var content: String
+    var image: String
+}

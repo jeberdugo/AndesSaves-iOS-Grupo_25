@@ -8,8 +8,8 @@
 import SwiftUI
 import WebKit
 import UserNotifications
-
-
+import GoogleMobileAds
+import UIKit
 
 struct ContentView: View {
     @State private var showAlert = false
@@ -17,6 +17,8 @@ struct ContentView: View {
     @StateObject private var functions = GlobalFunctions()
     @StateObject private var History = HistoryViewModel()
     @StateObject private var CategoryView = TagsViewModel()
+    @StateObject var networkMonitor = NetworkMonitor()
+    
     
     var body: some View {
         NavigationView {
@@ -26,6 +28,7 @@ struct ContentView: View {
                 VStack() {
                     Spacer(minLength: 20)
                     VStack() {
+                        
                         //Color(red: 78, green: 147, blue: 122)
                         Spacer(minLength: 5)
                         Text("BALANCE")
@@ -132,6 +135,7 @@ struct ContentView: View {
                     }
                     Spacer(minLength: 10)
                     MainMenu()
+
                     
                 }
             }
@@ -164,7 +168,7 @@ struct AddTransactionView: View {
                 Color(hex: "12CD8A").edgesIgnoringSafeArea(.all)
             }
             VStack {
-                Text("History")
+                Text("Add Transaction")
                     .font(.title)
                     .fontWeight(.bold)
                     .foregroundColor(.white)
@@ -183,6 +187,9 @@ struct AddTransactionView: View {
                         if newValue.count > 30 {
                             viewModel.transactionName = String(newValue.prefix(30))
                             }
+                            if newValue.trimmingCharacters(in: .whitespaces).isEmpty {
+                                                                                        viewModel.transactionName = ""
+                                                                                                   }
                         }
                     TextField("Amount", text: $viewModel.transactionAmount)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -191,13 +198,18 @@ struct AddTransactionView: View {
                             if newValue.count > 24 {
                                 viewModel.transactionAmount = String(newValue.prefix(10))
                             }
+                            if newValue.trimmingCharacters(in: .whitespaces).isEmpty {
+                                                            viewModel.transactionAmount = ""
+                                                                       }
                         }
                     TextField("Source", text: $viewModel.transactionSource)
                         .onChange(of: viewModel.transactionSource) { newValue in
                             if newValue.count > 30 {
                                 viewModel.transactionSource = String(newValue.prefix(30))
                             }
-                        }
+                            if newValue.trimmingCharacters(in: .whitespaces).isEmpty {
+                                viewModel.transactionSource = ""
+                                           }                        }
                 }
                 
                 Section(header: Text("Type")) {
@@ -357,6 +369,42 @@ struct AddTransactionView: View {
     }
 }
 
+private struct BannerVC: UIViewControllerRepresentable {
+    var bannerID: String
+    var width: CGFloat
+
+    func makeUIViewController(context: Context) -> UIViewController {
+        let view = GADBannerView(adSize: GADCurrentOrientationAnchoredAdaptiveBannerAdSizeWithWidth(width))
+
+        let viewController = UIViewController()
+        #if DEBUG
+        view.adUnitID = "ca-app-pub-6315386873677510/7187325499"
+        #else
+        view.adUnitID = "ca-app-pub-6315386873677510/7187325499"
+        #endif
+        view.rootViewController = viewController
+        viewController.view.addSubview(view)
+        view.load(GADRequest())
+
+        return viewController
+    }
+
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
+}
+
+struct Banner: View {
+    var bannerID: String
+    var width: CGFloat
+
+    var size: CGSize {
+        return GADCurrentOrientationAnchoredAdaptiveBannerAdSizeWithWidth(width).size
+    }
+
+    var body: some View {
+        BannerVC(bannerID: bannerID, width: width)
+            .frame(width: size.width, height: size.height)
+    }
+}
 
     
 struct ImagePicker: UIViewControllerRepresentable {
@@ -432,9 +480,6 @@ func checkAndSendNotificationIfNeeded() {
 }
 
 
-
-
-
 // SELECTOR DE VISTAS SECUNDARIAS
 func destinationView(for menuItem: MenuItem) -> some View {
     switch menuItem.title {
@@ -446,8 +491,8 @@ func destinationView(for menuItem: MenuItem) -> some View {
         return AnyView(TagsView())
     case "Summary":
         return AnyView(SummaryView())
-    case "Accounts":
-        return AnyView(AccountsView())
+    case "News":
+        return AnyView(NewsListView())
     case "Settings":
         return AnyView(SettingsView())
         

@@ -56,6 +56,10 @@ struct RegisterView: View {
                             if newValue.count > 30 {
                                 viewModel.name = String(newValue.prefix(30))
                             }
+                                if newValue.trimmingCharacters(in: .whitespaces).isEmpty {
+                                                                    viewModel.name = ""
+                                                                                                                                 }
+                                
                         }
                     }
                     .padding()
@@ -76,6 +80,10 @@ struct RegisterView: View {
                                 if newValue.count > 10 {
                                     viewModel.phone = String(newValue.prefix(10))
                                     }
+                                if newValue.trimmingCharacters(in: .whitespaces).isEmpty {
+                                    viewModel.phone = ""
+                                                                                                 }
+                                
                                 viewModel.isPhoneNumberValid = NSPredicate(format: "SELF MATCHES %@", viewModel.phoneRegex).evaluate(with: newValue)
                             }
                     }
@@ -97,6 +105,9 @@ struct RegisterView: View {
                                                 if newValue.count > 30 {
                                                     viewModel.password = String(newValue.prefix(30))
                                                 }
+                                if newValue.trimmingCharacters(in: .whitespaces).isEmpty {
+                                                                    viewModel.password = ""
+                                                                                                                                 }
                                             }
                     }
                     .padding()
@@ -118,6 +129,9 @@ struct RegisterView: View {
                                                 if newValue.count > 30 {
                                                     viewModel.passwordConfirmation = String(newValue.prefix(30))
                                                 }
+                                if newValue.trimmingCharacters(in: .whitespaces).isEmpty {
+                                                                    viewModel.passwordConfirmation = ""
+                                                                                                                                 }
                                             }
                     }
                     .padding()
