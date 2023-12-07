@@ -154,7 +154,7 @@ struct AddTagDialog: View {
                         tagName = String(newValue.prefix(30))
                     }
                     if newValue.trimmingCharacters(in: .whitespaces).isEmpty {
-                                                                          budgetName = ""
+                                                                          tagName = ""
                                                                                      }
                 }
             

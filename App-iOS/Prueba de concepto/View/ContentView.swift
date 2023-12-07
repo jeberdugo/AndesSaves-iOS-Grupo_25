@@ -192,7 +192,6 @@ struct AddTransactionView: View {
                                                                                                    }
                         }
                     TextField("Amount", text: $viewModel.transactionAmount)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
                         .keyboardType(.decimalPad)
                         .onChange(of: viewModel.transactionAmount) { newValue in
                             if newValue.count > 24 {
@@ -290,6 +289,7 @@ struct AddTransactionView: View {
                             viewModel.addTransaction(amount: Int(viewModel.transactionAmount) ?? 0, category: "Income", date: Date(), imageUri: "", name: viewModel.transactionName, source: viewModel.transactionSource, type: "Income", image:uiimage)
                             
                             viewModel.clearTextFields()
+                            viewModel.isAddingTransaction = false
                         }
                         else{
                             if viewModel.balance-(Float(viewModel.transactionAmount) ?? 0.0) < 0 {

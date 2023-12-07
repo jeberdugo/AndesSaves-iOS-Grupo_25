@@ -88,8 +88,10 @@ final class ContentViewModel: ObservableObject {
                         "source": source,
                         "type": type
                     ]) { error in
-                        if let error = error {
+                        if error != nil {
+                            
                             DispatchQueue.global().asyncAfter(deadline: dispatchTime) {
+                                
                                 let timestamp = Timestamp(date: date)
                                 let transaction = Transaction(amount: Float(amount),
                                                               category: category,
@@ -104,6 +106,7 @@ final class ContentViewModel: ObservableObject {
                                     self.saveImageFromDirectory(fileName: name, image: image)
                                 }
                                 self.isAddingTransaction = false
+                                
                                // self.historyViewModel.transactions.append(transaction)
                                 //self.historyViewModel.saveTransactionsToCache()
                             }
